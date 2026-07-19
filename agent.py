@@ -68,6 +68,26 @@ class IracingSource:
             stype = "Session"
         return car, track, num, stype
 
+    def _read_weather(self, num):
+        def var(name):
+            try:
+                v = self.ir[name]
+                return float(v) if v is not None else None
+            except Exception:
+                return None
+        try:
+            usage = self.ir["SessionInfo"]["Sessions"][num]["SessionTrackRubberState"]
+        except Exception:
+            usage = None
+        return {
+            "airTemp": var("AirTemp"),
+            "trackTemp": var("TrackTempCrew") if var("TrackTempCrew") is not None else var("TrackTemp"),
+            "humidity": var("RelativeHumidity"),
+            "windVel": var("WindVel"),
+            "windDir": var("WindDir"),
+            "trackUsage": usage,
+        }
+
     def poll(self):
         events = []
         was = self.connected
@@ -95,7 +115,8 @@ class IracingSource:
             # Nuova sessione: uid client-side per dedup lato server su riconnessioni
             self.session_key = key
             self.session = {"uid": str(uuid.uuid4()), "car": car, "track": track,
-                            "sessionType": stype, "sessionNum": num, "ts": time.time()}
+                            "sessionType": stype, "sessionNum": num, "ts": time.time(),
+                            **self._read_weather(num)}
             self.last_lap = lap
             events.append(("session", self.session))
 
@@ -131,7 +152,10 @@ class DemoSource:
         if self.session is None:
             s = self.SCRIPT[self.si]
             self.session = {"uid": str(uuid.uuid4()), "car": s["car"], "track": s["track"],
-                            "sessionType": s["sessionType"], "sessionNum": self.si, "ts": time.time()}
+                            "sessionType": s["sessionType"], "sessionNum": self.si, "ts": time.time(),
+                            "airTemp": round(random.uniform(18, 30), 1), "trackTemp": round(random.uniform(28, 45), 1),
+                            "humidity": round(random.uniform(0.3, 0.8), 2), "windVel": round(random.uniform(0, 8), 1),
+                            "windDir": round(random.uniform(0, 6.28), 2), "trackUsage": random.choice(["low usage", "moderately low usage", "high usage"])}
             self.lap = 0
             events.append(("session", self.session))
         if time.time() >= self.next_at:

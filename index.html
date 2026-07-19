@@ -60,6 +60,12 @@ td:last-child,th:last-child{text-align:right}
 tr.best td{color:#fff;background:linear-gradient(90deg,rgba(225,6,0,.22),transparent 70%)}
 tr.best td:last-child{color:var(--red);font-weight:700}
 
+.wx{display:flex;flex-wrap:wrap;gap:8px;margin:-6px 0 16px}
+.chip{display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--panel);border:1px solid var(--line);border-top:2px solid var(--red);padding:10px 14px;min-width:86px}
+.chip .ico{font-size:18px;line-height:1}
+.chip .cl{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
+.chip .cv{font-family:'Chivo Mono',monospace;font-size:13px;font-weight:700}
+.wxline{display:block;font-size:11px;color:var(--dim);margin-top:2px}
 .empty{text-align:center;color:var(--dim);font-size:14px;padding:40px 12px;border:1px dashed var(--line)}
 .err{color:var(--red);font-size:13px;padding:12px 0}
 @media (prefers-reduced-motion:no-preference){
@@ -94,6 +100,26 @@ const stype = t => {
   if (t.includes("test")) return "Test";
   return t || "Sessione";
 };
+const compass = r => r==null ? "" : ["N","NE","E","SE","S","SO","O","NO"][Math.round(((r*180/Math.PI)%360+360)%360/45)%8];
+const usageIt = u => {
+  u = (u||"").toLowerCase();
+  if (u.includes("moderately low")) return "Medio-basso";
+  if (u.includes("moderately high")) return "Medio-alto";
+  if (u.includes("low")) return "Basso";
+  if (u.includes("high")) return "Alto";
+  if (u.includes("moderate")) return "Medio";
+  return u || null;
+};
+const wxChips = s => {
+  const c = [];
+  if (s.air_temp != null)   c.push(["🌡️","Aria", s.air_temp.toFixed(1)+"°C"]);
+  if (s.track_temp != null) c.push(["🛣️","Pista", s.track_temp.toFixed(1)+"°C"]);
+  if (s.humidity != null)   c.push(["💧","Umidità", Math.round(s.humidity*100)+"%"]);
+  if (s.wind_vel != null)   c.push(["💨","Vento", (s.wind_vel*3.6).toFixed(0)+" km/h "+compass(s.wind_dir)]);
+  if (usageIt(s.track_usage)) c.push(["🏁","Gommatura", usageIt(s.track_usage)]);
+  return c;
+};
+const wxInline = s => wxChips(s).map(([e,,v])=>`${e} ${v}`).join(" · ");
 const api = async p => {
   const r = await fetch(`/api/${p}${p.includes("?")?"&":"?"}token=${encodeURIComponent(token)}`);
   if(!r.ok) throw new Error(r.status);
@@ -143,7 +169,7 @@ async function toggleTrack(carId, trackId){
   const ss = await api(`cars/${carId}/tracks/${trackId}/sessions`);
   box.innerHTML = ss.map(s => `<a href="#/session/${s.id}">
     <span class="stype ${stype(s.session_type)==="Gara"?"race":""}">${stype(s.session_type)}</span>
-    <span class="sdate">${fdate(s.started_at)}</span>
+    <span class="sdate">${fdate(s.started_at)}${wxInline(s)?`<span class="wxline">${wxInline(s)}</span>`:""}</span>
     <span class="smeta">${s.laps} giri${s.best?" · best "+fmt(s.best):""}</span></a>`).join("")
     || `<a>Nessuna sessione.</a>`;
 }
@@ -160,7 +186,9 @@ async function viewLaps(sessionId){
         <div class="lbl">Giro migliore</div>
         <div class="big">${best?fmt(best):"--:--.---"}</div>
         <div class="ctx">${esc(s.car)} · ${esc(s.track)} · ${fdate(s.started_at)}</div>
-      </div>` + (laps.length ?
+      </div>
+      ${wxChips(s).length ? `<div class="wx">` + wxChips(s).map(([e,l,v]) =>
+        `<div class="chip"><span class="ico">${e}</span><span class="cl">${l}</span><span class="cv">${v}</span></div>`).join("") + `</div>` : ""}` + (laps.length ?
       `<table><thead><tr><th>Giro</th><th>Tempo</th></tr></thead><tbody>` +
       laps.map(l=>`<tr class="${l.time_s===best?"best":""}"><td>${l.lap}</td><td>${fmt(l.time_s)}</td></tr>`).join("") +
       `</tbody></table>` :

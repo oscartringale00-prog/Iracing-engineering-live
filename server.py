@@ -59,11 +59,14 @@ async def ws_agent(ws: WebSocket, token: str):
                         token, msg["track"])
                     # client_uid dedup: la riconnessione dell'agente non duplica la sessione
                     session_id = await c.fetchval(
-                        "INSERT INTO sessions (token, client_uid, car_id, track_id, session_type, session_num) "
-                        "VALUES ($1,$2,$3,$4,$5,$6) "
+                        "INSERT INTO sessions (token, client_uid, car_id, track_id, session_type, session_num, "
+                        " air_temp, track_temp, humidity, wind_vel, wind_dir, track_usage) "
+                        "VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) "
                         "ON CONFLICT (token, client_uid) DO UPDATE SET session_type=EXCLUDED.session_type "
                         "RETURNING id",
-                        token, msg["uid"], car_id, track_id, msg.get("sessionType", "Session"), msg.get("sessionNum", 0))
+                        token, msg["uid"], car_id, track_id, msg.get("sessionType", "Session"), msg.get("sessionNum", 0),
+                        msg.get("airTemp"), msg.get("trackTemp"), msg.get("humidity"),
+                        msg.get("windVel"), msg.get("windDir"), msg.get("trackUsage"))
             elif t == "lap" and session_id is not None:
                 async with pool.acquire() as c:
                     await c.execute(
@@ -94,7 +97,8 @@ async def list_tracks(car_id: int, token: str):
 @app.get("/api/cars/{car_id}/tracks/{track_id}/sessions")
 async def list_sessions(car_id: int, track_id: int, token: str):
     rows = await pool.fetch(
-        "SELECT s.id, s.session_type, s.started_at, COUNT(l.id) AS laps, MIN(l.time_s) AS best "
+        "SELECT s.id, s.session_type, s.started_at, COUNT(l.id) AS laps, MIN(l.time_s) AS best, "
+        " s.air_temp, s.track_temp, s.humidity, s.wind_vel, s.wind_dir, s.track_usage "
         "FROM sessions s LEFT JOIN laps l ON l.session_id = s.id "
         "WHERE s.token = $1 AND s.car_id = $2 AND s.track_id = $3 "
         "GROUP BY s.id ORDER BY s.started_at DESC", token, car_id, track_id)
@@ -104,7 +108,8 @@ async def list_sessions(car_id: int, track_id: int, token: str):
 @app.get("/api/sessions/{session_id}/laps")
 async def list_laps(session_id: int, token: str):
     meta = await pool.fetchrow(
-        "SELECT s.id, s.session_type, s.started_at, c.name AS car, t.name AS track "
+        "SELECT s.id, s.session_type, s.started_at, c.name AS car, t.name AS track, "
+        " s.air_temp, s.track_temp, s.humidity, s.wind_vel, s.wind_dir, s.track_usage "
         "FROM sessions s JOIN cars c ON c.id = s.car_id JOIN tracks t ON t.id = s.track_id "
         "WHERE s.id = $1 AND s.token = $2", session_id, token)
     if not meta:
