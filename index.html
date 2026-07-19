@@ -3,103 +3,190 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>iRacing Live Timing</title>
-<link href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@400;700&family=Archivo:wght@500;800&display=swap" rel="stylesheet">
+<title>iRacing Telemetry</title>
+<link href="https://fonts.googleapis.com/css2?family=Titillium+Web:ital,wght@0,400;0,600;1,900&family=Chivo+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#0b0d10; --panel:#14181d; --line:#232a31;
-  --ink:#e8edf2; --dim:#7d8a96;
-  --go:#35d07f; --wait:#f2b63d; --off:#e2504c; --best:#b46cff;
+  --bg:#0b0b0c; --panel:#131315; --panel2:#18181b; --line:#26262a;
+  --ink:#f5f5f6; --dim:#9a9aa1;
+  --red:#e10600; --red-dark:#7a0300;
 }
 *{box-sizing:border-box;margin:0}
-body{background:var(--bg);color:var(--ink);font-family:'Archivo',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:28px 16px}
-header{width:100%;max-width:640px;display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
-h1{font-size:15px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
-h1 span{color:var(--dim)}
-.pills{display:flex;gap:8px}
-.pill{font-size:11px;font-weight:500;letter-spacing:.06em;padding:5px 10px;border:1px solid var(--line);border-radius:999px;color:var(--dim);display:flex;align-items:center;gap:6px}
-.pill i{width:7px;height:7px;border-radius:50%;background:var(--off);display:inline-block}
-.pill.on i{background:var(--go)}
-.pill.wait i{background:var(--wait)}
-.board{width:100%;max-width:640px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 26px 20px;margin-bottom:14px}
-.board .label{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
-.board .time{font-family:'Chivo Mono',monospace;font-size:clamp(44px,10vw,72px);font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
-.board .sub{margin-top:10px;font-family:'Chivo Mono',monospace;font-size:13px;color:var(--dim)}
-.board .sub b{color:var(--best);font-weight:700}
-table{width:100%;max-width:640px;border-collapse:collapse;font-family:'Chivo Mono',monospace;font-size:14px}
-th{font-family:'Archivo';font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);text-align:left;padding:8px 12px;border-bottom:1px solid var(--line)}
+body{background:var(--bg);color:var(--ink);font-family:'Titillium Web',sans-serif;min-height:100vh}
+
+header{border-bottom:1px solid var(--line);background:linear-gradient(180deg,#101012,#0b0b0c)}
+.head-in{max-width:760px;margin:0 auto;padding:18px 16px 14px;display:flex;align-items:center;gap:14px}
+.slash{width:26px;height:34px;background:var(--red);transform:skewX(-18deg);flex:none}
+.brand{font-style:italic;font-weight:900;font-size:20px;letter-spacing:.06em;text-transform:uppercase;line-height:1.05}
+.brand small{display:block;font-style:normal;font-weight:600;font-size:10px;letter-spacing:.3em;color:var(--dim)}
+
+nav#crumb{max-width:760px;margin:0 auto;padding:14px 16px 0;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);display:flex;gap:8px;flex-wrap:wrap}
+nav#crumb a{color:var(--dim);text-decoration:none}
+nav#crumb a:hover{color:var(--ink)}
+nav#crumb .sep{color:var(--red)}
+nav#crumb .cur{color:var(--ink)}
+
+main{max-width:760px;margin:0 auto;padding:14px 16px 60px}
+h2.vt{font-style:italic;font-weight:900;text-transform:uppercase;font-size:26px;letter-spacing:.04em;margin:10px 0 16px}
+h2.vt em{color:var(--red);font-style:italic}
+
+.row{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--red-dark);padding:14px 16px;margin-bottom:8px;cursor:pointer;transition:border-color .15s,transform .1s}
+.row:hover{border-left-color:var(--red);background:var(--panel2)}
+.row .name{font-weight:600;font-size:16px;flex:1}
+.row .meta{font-family:'Chivo Mono',monospace;font-size:12px;color:var(--dim);text-align:right}
+.row .arrow{color:var(--red);font-weight:900}
+
+.acc{margin-bottom:8px}
+.acc .row{margin-bottom:0}
+.acc.open .row{border-left-color:var(--red)}
+.sess{display:none;border:1px solid var(--line);border-top:0;background:#0e0e10}
+.acc.open .sess{display:block}
+.sess a{display:flex;gap:14px;align-items:center;padding:11px 16px 11px 34px;color:var(--ink);text-decoration:none;border-top:1px solid var(--line);font-size:14px}
+.sess a:hover{background:var(--panel2)}
+.sess .stype{font-weight:600;text-transform:uppercase;font-size:12px;letter-spacing:.08em;min-width:110px}
+.sess .stype.race{color:var(--red)}
+.sess .sdate{color:var(--dim);flex:1}
+.sess .smeta{font-family:'Chivo Mono',monospace;font-size:12px;color:var(--dim)}
+
+.board{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--red);padding:20px;margin-bottom:16px}
+.board .lbl{font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--dim)}
+.board .big{font-family:'Chivo Mono',monospace;font-weight:700;font-size:clamp(38px,9vw,56px);line-height:1.1;font-variant-numeric:tabular-nums}
+.board .ctx{margin-top:6px;font-size:13px;color:var(--dim)}
+
+table{width:100%;border-collapse:collapse;font-family:'Chivo Mono',monospace;font-size:14px}
+th{font-family:'Titillium Web';font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);text-align:left;padding:8px 12px;border-bottom:1px solid var(--red-dark)}
 td{padding:9px 12px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
 td:last-child,th:last-child{text-align:right}
-tr.best td{color:var(--best)}
-tr.new td{animation:flash .8s ease-out}
-@keyframes flash{from{background:#1f2730}to{background:transparent}}
-.empty{max-width:640px;width:100%;text-align:center;color:var(--dim);font-size:13px;padding:34px 0;border:1px dashed var(--line);border-radius:14px}
-@media (prefers-reduced-motion:reduce){tr.new td{animation:none}}
+tr.best td{color:#fff;background:linear-gradient(90deg,rgba(225,6,0,.22),transparent 70%)}
+tr.best td:last-child{color:var(--red);font-weight:700}
+
+.empty{text-align:center;color:var(--dim);font-size:14px;padding:40px 12px;border:1px dashed var(--line)}
+.err{color:var(--red);font-size:13px;padding:12px 0}
+@media (prefers-reduced-motion:no-preference){
+  main>*{animation:up .18s ease-out}
+  @keyframes up{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+}
 </style>
 </head>
 <body>
-<header>
-  <h1>iRacing <span>/ Live Timing</span></h1>
-  <div class="pills">
-    <div class="pill" id="pAgent"><i></i>Agente</div>
-    <div class="pill" id="pIr"><i></i>iRacing</div>
-  </div>
-</header>
-
-<div class="board">
-  <div class="label">Ultimo giro</div>
-  <div class="time" id="lastTime">--:--.---</div>
-  <div class="sub">Giro <span id="lastLap">–</span> · Migliore <b id="bestTime">--:--.---</b></div>
-</div>
-
-<div class="empty" id="empty">In attesa dei primi giri. Avvia l'agente sul PC di gara: la sessione apparirà qui da sola.</div>
-
-<table id="tbl" hidden>
-  <thead><tr><th>Giro</th><th>Tempo</th></tr></thead>
-  <tbody id="rows"></tbody>
-</table>
+<header><div class="head-in">
+  <div class="slash"></div>
+  <div class="brand">Telemetry<small>iRacing session archive</small></div>
+</div></header>
+<nav id="crumb"></nav>
+<main id="app"></main>
 
 <script>
 const token = new URLSearchParams(location.search).get("token") || "";
-const proto = location.protocol === "https:" ? "wss" : "ws";
-const laps = [];
-let best = Infinity;
+const app = document.getElementById("app");
+const crumb = document.getElementById("crumb");
+const cache = {carName:{}, trackName:{}};
+let pollTimer = null;
 
-const $ = id => document.getElementById(id);
-const fmt = s => {
-  const m = Math.floor(s/60), r = s - m*60;
-  return `${m}:${r.toFixed(3).padStart(6,"0")}`;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt = s => { const m = Math.floor(s/60); return `${m}:${(s-m*60).toFixed(3).padStart(6,"0")}`; };
+const fdate = iso => new Date(iso).toLocaleString("it-IT",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
+const stype = t => {
+  t = (t||"").toLowerCase();
+  if (t.includes("race")) return "Gara";
+  if (t.includes("qual")) return "Qualifica";
+  if (t.includes("practice") || t.includes("warmup")) return "Prove libere";
+  if (t.includes("test")) return "Test";
+  return t || "Sessione";
 };
-const setPill = (el, state) => { el.className = "pill " + state; };
+const api = async p => {
+  const r = await fetch(`/api/${p}${p.includes("?")?"&":"?"}token=${encodeURIComponent(token)}`);
+  if(!r.ok) throw new Error(r.status);
+  return r.json();
+};
+const setCrumb = parts => {
+  crumb.innerHTML = parts.map((p,i) =>
+    (i?'<span class="sep">/</span>':'') +
+    (p.href ? `<a href="${p.href}">${esc(p.txt)}</a>` : `<span class="cur">${esc(p.txt)}</span>`)
+  ).join("");
+};
 
-function render(){
-  $("empty").hidden = laps.length > 0;
-  $("tbl").hidden = laps.length === 0;
-  best = Math.min(...laps.map(l => l.lastLapTime), Infinity);
-  $("rows").innerHTML = laps.slice().reverse().map((l,i) =>
-    `<tr class="${l.lastLapTime===best?'best':''} ${i===0?'new':''}"><td>${l.lap}</td><td>${fmt(l.lastLapTime)}</td></tr>`).join("");
-  const last = laps[laps.length-1];
-  $("lastTime").textContent = last ? fmt(last.lastLapTime) : "--:--.---";
-  $("lastLap").textContent = last ? last.lap : "–";
-  $("bestTime").textContent = isFinite(best) ? fmt(best) : "--:--.---";
+async function viewCars(){
+  setCrumb([{txt:"Le mie auto"}]);
+  const cars = await api("cars");
+  app.innerHTML = `<h2 class="vt">Le mie <em>auto</em></h2>` + (cars.length ?
+    cars.map(c => `<div class="row" onclick="location.hash='#/car/${c.id}'" data-name="${esc(c.name)}">
+      <div class="name">${esc(c.name)}</div>
+      <div class="meta">${c.sessions} session${c.sessions==1?"e":"i"}</div>
+      <div class="arrow">›</div></div>`).join("") :
+    `<div class="empty">Nessuna telemetria salvata.<br>Avvia l'agente sul PC di gara ed entra in pista: le auto appariranno qui da sole.</div>`);
+  cars.forEach(c => cache.carName[c.id] = c.name);
 }
 
-function connect(){
-  const ws = new WebSocket(`${proto}://${location.host}/ws/viewer?token=${encodeURIComponent(token)}`);
-  ws.onmessage = e => {
-    const m = JSON.parse(e.data);
-    if(m.type === "init"){ laps.length = 0; laps.push(...m.laps); syncStatus(m.agentOnline, m.iracing); render(); }
-    else if(m.type === "lap"){ laps.push(m); render(); }
-    else if(m.type === "reset"){ laps.length = 0; render(); }
-    else if(m.type === "agent"){ syncStatus(m.online, m.iracing); }
+async function viewTracks(carId){
+  const carName = cache.carName[carId] || (await api("cars")).find(c=>c.id==carId)?.name || "Auto";
+  cache.carName[carId] = carName;
+  setCrumb([{txt:"Le mie auto",href:"#/"},{txt:carName}]);
+  const tracks = await api(`cars/${carId}/tracks`);
+  app.innerHTML = `<h2 class="vt">${esc(carName)} — <em>piste</em></h2>` + (tracks.length ?
+    tracks.map(t => `<div class="acc" id="acc${t.id}">
+      <div class="row" onclick="toggleTrack(${carId},${t.id})">
+        <div class="name">${esc(t.name)}</div>
+        <div class="meta">${t.sessions} session${t.sessions==1?"e":"i"}</div>
+        <div class="arrow">▾</div></div>
+      <div class="sess" id="sess${t.id}"></div></div>`).join("") :
+    `<div class="empty">Nessuna pista registrata con questa auto.</div>`);
+}
+
+async function toggleTrack(carId, trackId){
+  const acc = document.getElementById("acc"+trackId);
+  if (acc.classList.contains("open")) { acc.classList.remove("open"); return; }
+  document.querySelectorAll(".acc.open").forEach(a=>a.classList.remove("open"));
+  acc.classList.add("open");
+  const box = document.getElementById("sess"+trackId);
+  box.innerHTML = `<a>Caricamento…</a>`;
+  const ss = await api(`cars/${carId}/tracks/${trackId}/sessions`);
+  box.innerHTML = ss.map(s => `<a href="#/session/${s.id}">
+    <span class="stype ${stype(s.session_type)==="Gara"?"race":""}">${stype(s.session_type)}</span>
+    <span class="sdate">${fdate(s.started_at)}</span>
+    <span class="smeta">${s.laps} giri${s.best?" · best "+fmt(s.best):""}</span></a>`).join("")
+    || `<a>Nessuna sessione.</a>`;
+}
+
+async function viewLaps(sessionId){
+  const load = async () => {
+    const d = await api(`sessions/${sessionId}/laps`);
+    const s = d.session, laps = d.laps;
+    setCrumb([{txt:"Le mie auto",href:"#/"},{txt:s.car,href:"#/car/"+carIdFromCache(s.car)},{txt:s.track},{txt:stype(s.session_type)}]);
+    const best = laps.length ? Math.min(...laps.map(l=>l.time_s)) : null;
+    app.innerHTML = `
+      <h2 class="vt">${stype(s.session_type)} — <em>tempi</em></h2>
+      <div class="board">
+        <div class="lbl">Giro migliore</div>
+        <div class="big">${best?fmt(best):"--:--.---"}</div>
+        <div class="ctx">${esc(s.car)} · ${esc(s.track)} · ${fdate(s.started_at)}</div>
+      </div>` + (laps.length ?
+      `<table><thead><tr><th>Giro</th><th>Tempo</th></tr></thead><tbody>` +
+      laps.map(l=>`<tr class="${l.time_s===best?"best":""}"><td>${l.lap}</td><td>${fmt(l.time_s)}</td></tr>`).join("") +
+      `</tbody></table>` :
+      `<div class="empty">Ancora nessun giro completato in questa sessione.</div>`);
   };
-  ws.onclose = () => { setPill($("pAgent"),""); setPill($("pIr"),""); setTimeout(connect, 2000); };
+  await load();
+  // La sessione potrebbe essere in corso: aggiorna da sola ogni 5s
+  pollTimer = setInterval(() => load().catch(()=>{}), 5000);
 }
-function syncStatus(agent, ir){
-  setPill($("pAgent"), agent ? "on" : "");
-  setPill($("pIr"), ir ? "on" : agent ? "wait" : "");
+const carIdFromCache = name => Object.entries(cache.carName).find(([,n])=>n===name)?.[0] ?? "";
+
+async function route(){
+  clearInterval(pollTimer);
+  const h = location.hash.replace(/^#\/?/,"");
+  try{
+    if (!token) { app.innerHTML = `<div class="empty">Link non valido: manca il token.<br>Apri la dashboard dal programma sul tuo PC.</div>`; return; }
+    let m;
+    if ((m = h.match(/^car\/(\d+)/))) await viewTracks(+m[1]);
+    else if ((m = h.match(/^session\/(\d+)/))) await viewLaps(+m[1]);
+    else await viewCars();
+  }catch(e){
+    app.innerHTML = `<div class="err">Errore di caricamento (${esc(e.message)}). Riprova tra qualche secondo.</div>`;
+  }
 }
-connect();
+window.addEventListener("hashchange", route);
+route();
 </script>
 </body>
 </html>

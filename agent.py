@@ -3,8 +3,8 @@ import json
 import random
 import secrets
 import sys
-import threading
 import time
+import uuid
 import webbrowser
 from pathlib import Path
 
@@ -15,8 +15,7 @@ except ImportError:
 
 import websocket
 
-# URL del tuo backend: cambialo prima di buildare l'exe. L'utente finale non tocca nulla.
-DEFAULT_BACKEND = "wss://TUO-BACKEND.example.com"
+DEFAULT_BACKEND = "wss://web-production-8fbbf.up.railway.app"
 
 CONFIG_PATH = Path(sys.executable if getattr(sys, "frozen", False) else __file__).parent / "config.ini"
 DEMO = "--demo" in sys.argv
@@ -35,7 +34,6 @@ def load_config():
         cfg["agent"]["backend"] = DEFAULT_BACKEND
         changed = True
     if not cfg["agent"].get("token"):
-        # Token generato una sola volta: identifica la "stanza" privata dell'utente
         cfg["agent"]["token"] = secrets.token_urlsafe(9)
         changed = True
     if changed:
@@ -49,12 +47,29 @@ class IracingSource:
         self.ir = irsdk.IRSDK() if irsdk else None
         self.connected = False
         self.last_lap = None
+        self.session_key = None
+        self.session = None
+
+    def _read_context(self):
+        """Estrae auto, pista e tipo sessione dai blocchi YAML dell'SDK."""
+        try:
+            di = self.ir["DriverInfo"]
+            car = di["Drivers"][di["DriverCarIdx"]]["CarScreenName"]
+        except Exception:
+            car = "Auto sconosciuta"
+        try:
+            track = self.ir["WeekendInfo"]["TrackDisplayName"]
+        except Exception:
+            track = "Pista sconosciuta"
+        num = self.ir["SessionNum"] or 0
+        try:
+            stype = self.ir["SessionInfo"]["Sessions"][num]["SessionType"]
+        except Exception:
+            stype = "Session"
+        return car, track, num, stype
 
     def poll(self):
-        """Ritorna ('status', bool) su cambio stato o ('lap', dict) su nuovo giro completato."""
         events = []
-        if not self.ir:
-            return events
         was = self.connected
         if not self.connected:
             self.connected = bool(self.ir.startup())
@@ -62,36 +77,70 @@ class IracingSource:
             self.ir.shutdown()
             self.connected = False
             self.last_lap = None
+            self.session_key = None
+            self.session = None
         if was != self.connected:
             events.append(("status", self.connected))
-        if self.connected:
-            self.ir.freeze_var_buffer_latest()
-            lap = self.ir["Lap"]
-            last_time = self.ir["LapLastLapTime"]
-            self.ir.unfreeze_var_buffer_latest()
-            if lap is not None and lap != self.last_lap:
-                if self.last_lap is not None and last_time and last_time > 0:
-                    events.append(("lap", {"lap": self.last_lap, "lastLapTime": float(last_time)}))
-                self.last_lap = lap
+        if not self.connected:
+            return events
+
+        self.ir.freeze_var_buffer_latest()
+        lap = self.ir["Lap"]
+        last_time = self.ir["LapLastLapTime"]
+        self.ir.unfreeze_var_buffer_latest()
+
+        car, track, num, stype = self._read_context()
+        key = (car, track, num)
+        if key != self.session_key:
+            # Nuova sessione: uid client-side per dedup lato server su riconnessioni
+            self.session_key = key
+            self.session = {"uid": str(uuid.uuid4()), "car": car, "track": track,
+                            "sessionType": stype, "sessionNum": num, "ts": time.time()}
+            self.last_lap = lap
+            events.append(("session", self.session))
+
+        if lap is not None and lap != self.last_lap:
+            if self.last_lap is not None and last_time and last_time > 0:
+                events.append(("lap", {"lap": self.last_lap, "lastLapTime": float(last_time)}))
+            self.last_lap = lap
         return events
 
 
 class DemoSource:
+    """Simula due sessioni (Practice poi Race) su auto/piste diverse."""
+    SCRIPT = [
+        {"car": "Mazda MX-5 Cup", "track": "Autodromo Nazionale Monza", "sessionType": "Practice", "laps": 3},
+        {"car": "Mazda MX-5 Cup", "track": "Autodromo Nazionale Monza", "sessionType": "Race", "laps": 3},
+    ]
+
     def __init__(self):
         self.connected = True
         self.announced = False
+        self.si = 0
         self.lap = 0
         self.next_at = time.time() + 3
+        self.session = None
 
     def poll(self):
         events = []
         if not self.announced:
             self.announced = True
             events.append(("status", True))
+        if self.si >= len(self.SCRIPT):
+            return events
+        if self.session is None:
+            s = self.SCRIPT[self.si]
+            self.session = {"uid": str(uuid.uuid4()), "car": s["car"], "track": s["track"],
+                            "sessionType": s["sessionType"], "sessionNum": self.si, "ts": time.time()}
+            self.lap = 0
+            events.append(("session", self.session))
         if time.time() >= self.next_at:
             self.lap += 1
-            events.append(("lap", {"lap": self.lap, "lastLapTime": 92.5 + random.uniform(-1.5, 1.5)}))
-            self.next_at = time.time() + 12
+            events.append(("lap", {"lap": self.lap, "lastLapTime": 107.0 + random.uniform(-2.0, 2.0)}))
+            self.next_at = time.time() + 8
+            if self.lap >= self.SCRIPT[self.si]["laps"]:
+                self.si += 1
+                self.session = None
         return events
 
 
@@ -99,7 +148,7 @@ def run():
     backend, token = load_config()
     http_url = backend.replace("wss://", "https://").replace("ws://", "http://")
     dashboard = f"{http_url}/?token={token}"
-    print(f"iRacing Live Agent {'(DEMO)' if DEMO else ''}\nDashboard: {dashboard}")
+    print(f"iRacing Telemetry Agent {'(DEMO)' if DEMO else ''}\nDashboard: {dashboard}")
     webbrowser.open(dashboard)
 
     source = DemoSource() if DEMO else IracingSource()
@@ -114,13 +163,17 @@ def run():
             ws.settimeout(POLL_S)
             backoff = 1
             print("Connesso al server.")
-            ws.send(json.dumps({"type": "status", "iracing": getattr(source, "connected", False)}))
+            # Dopo una riconnessione il server deve riagganciare la sessione corrente
+            if getattr(source, "session", None):
+                ws.send(json.dumps({"type": "session_start", **source.session}))
             last_hb = time.time()
             while True:
                 for kind, data in source.poll():
                     if kind == "status":
                         print("iRacing:", "connesso" if data else "in attesa...")
-                        ws.send(json.dumps({"type": "status", "iracing": data}))
+                    elif kind == "session":
+                        print(f"Sessione: {data['sessionType']} | {data['car']} @ {data['track']}")
+                        ws.send(json.dumps({"type": "session_start", **data}))
                     else:
                         print(f"Giro {data['lap']}: {data['lastLapTime']:.3f}s")
                         ws.send(json.dumps({"type": "lap", **data, "ts": time.time()}))

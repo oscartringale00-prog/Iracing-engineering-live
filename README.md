@@ -1,39 +1,36 @@
-# iRacing Live Timing
+# iRacing Telemetry — Archivio sessioni
 
-Agente Windows → backend cloud → dashboard web. Giro e tempo in tempo reale.
+Agente Windows → backend cloud (Railway + Postgres) → archivio web navigabile:
+Auto → Piste → Sessioni (data/ora + tipo) → Tempi giro.
 
-## Esperienza utente finale
-1. Scarica `iRacingLive.exe` e fa doppio click.
-2. Il browser si apre da solo sulla sua dashboard privata (token generato automaticamente al primo avvio, salvato in `config.ini` accanto all'exe).
-3. Appena entra in pista, i giri compaiono da soli. Fine.
+## Aggiornamento del deploy esistente su Railway (da fare una volta)
+1. **Aggiungi il database**: nel progetto Railway clicca "+ Add" (o "New") → "Database" → "Add PostgreSQL". Railway lo crea in pochi secondi.
+2. **Collega il database al server**: apri il servizio web (quello collegato a GitHub) → scheda "Variables" → "Add Variable Reference" → scegli `DATABASE_URL` dal servizio Postgres. Salva: il server riparte da solo con la variabile.
+3. **Carica i file aggiornati su GitHub** (sovrascrivendo i vecchi): `server.py`, `index.html`, `agent.py`, `schema.sql`, `requirements.txt`, `Procfile`. Railway rifà il deploy da solo. Le tabelle vengono create automaticamente al primo avvio (schema.sql).
+4. **Ricostruisci l'exe** (l'agente è cambiato):
+   pip install pyirsdk pyinstaller websocket-client
+   python -m PyInstaller --onefile --name iRacingLive agent.py
+   Il nuovo `dist/iRacingLive.exe` va ridistribuito ai clienti. Il token in `config.ini` resta lo stesso, quindi chi aveva già il programma ritrova i propri dati.
 
-## Deploy backend (una volta sola, tu)
-```bash
-pip install -r requirements.txt
-uvicorn server:app --host 0.0.0.0 --port 8000
-```
-Funziona su Railway / Fly.io / VPS. Metti `index.html` nella stessa cartella di `server.py` (viene servito su `/`). In produzione usa HTTPS/WSS (reverse proxy o piattaforma che lo fornisce).
+## Test locale senza iRacing
+Serve un Postgres locale raggiungibile come `postgresql://postgres:postgres@localhost/iracing`
+(oppure imposta la variabile d'ambiente `DATABASE_URL`).
+    python -m uvicorn server:app --port 8000     # terminale 1
+    python agent.py --demo                        # terminale 2 (backend = ws://localhost:8000 in config.ini)
+La demo simula 2 sessioni (Prove Libere + Gara) su Monza con la MX-5 Cup, un giro ogni ~8s.
 
-## Build dell'agente (una volta sola, tu)
-1. In `agent.py` imposta `DEFAULT_BACKEND = "wss://tuodominio.com"`.
-2. Su Windows:
-```bash
-pip install pyirsdk websocket-client pyinstaller
-pyinstaller --onefile --name iRacingLive agent.py
-```
-L'exe è in `dist/iRacingLive.exe`.
+## Protocollo agente → server (WebSocket /ws/agent?token=...)
+- {"type":"session_start","uid":"...","car":"...","track":"...","sessionType":"Race","sessionNum":0,"ts":...}
+  (uid generato dall'agente: le riconnessioni non duplicano la sessione)
+- {"type":"lap","lap":12,"lastLapTime":92.431,"ts":...}
+- {"type":"hb"}
 
-## Test end-to-end senza iRacing
-```bash
-uvicorn server:app --port 8000            # terminale 1
-python agent.py --demo                     # terminale 2 (con DEFAULT_BACKEND=ws://localhost:8000)
-```
-La modalità `--demo` genera un giro simulato ogni ~12 secondi.
-
-## Protocollo messaggi (JSON su WebSocket)
-- Agente → server: `{"type":"lap","lap":12,"lastLapTime":92.431,"ts":...}` · `{"type":"status","iracing":true}` · `{"type":"hb"}`
-- Server → viewer: `{"type":"init","laps":[...],"agentOnline":true,"iracing":true}` · `{"type":"lap",...}` · `{"type":"agent","online":bool,"iracing":bool}` · `{"type":"reset"}`
+## API REST (tutte con ?token=...)
+- GET /api/cars
+- GET /api/cars/{car_id}/tracks
+- GET /api/cars/{car_id}/tracks/{track_id}/sessions
+- GET /api/sessions/{id}/laps
 
 ## Note
-- Stato in memoria: al riavvio del server lo storico si azzera (ok per MVP).
-- Il token nell'URL identifica la stanza; per la vendita potrai sostituirlo con account/licenze senza toccare l'agente (stesso campo in `config.ini`).
+- Ogni utente vede solo i propri dati (filtro per token in ogni query).
+- I dati sono permanenti: vivono nel Postgres di Railway, non nel filesystem del server.
