@@ -349,9 +349,20 @@ function renderBlocks(section){
   return `<div class="blockgrid">${blocks.join("")}</div>`;
 }
 
+const SETUP_TAB_ORDER = ["TiresAero", "Chassis", "Dampers", "Systems"];
+function orderSetupTabs(entries){
+  return entries.slice().sort((a, b) => {
+    const ia = SETUP_TAB_ORDER.indexOf(a[0]), ib = SETUP_TAB_ORDER.indexOf(b[0]);
+    if (ia === -1 && ib === -1) return 0;          // sezioni non previste: restano nel loro ordine relativo
+    if (ia === -1) return 1;                        // vanno in coda
+    if (ib === -1) return -1;
+    return ia - ib;
+  });
+}
+
 function renderSetup(obj, stintId){
   if (!obj || !Object.keys(obj).length) return `<div class="kv"><span>Setup non disponibile</span><span></span></div>`;
-  const tabs = Object.entries(obj);
+  const tabs = orderSetupTabs(Object.entries(obj));
   const btns = tabs.map(([k],i) =>
     `<button class="tabbtn ${i===0?"active":""}" data-tab="t${i}" onclick="selectSetupTab(${stintId},'t${i}')">${esc(labelize(k))}</button>`).join("");
   const panes = tabs.map(([k,v],i) =>
