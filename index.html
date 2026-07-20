@@ -74,6 +74,21 @@ h2.vt em{color:var(--red);font-style:italic}
 .setupbox h4{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--red);margin:10px 0 6px}
 .setupbox h5{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:8px 0 4px}
 .kv{display:flex;justify-content:space-between;font-family:'Chivo Mono',monospace;font-size:12px;padding:3px 0;border-bottom:1px dashed #1c1c20}
+.kvgrid{margin-bottom:4px}
+
+.setuptabs{margin-top:2px}
+.tabsrow{display:flex;align-items:center;gap:6px;margin-bottom:12px}
+.tabarrow{flex:none;background:var(--panel2);border:1px solid var(--line);color:var(--dim);width:28px;height:28px;font-size:16px;line-height:1;cursor:pointer}
+.tabarrow:hover{border-color:var(--red);color:var(--ink)}
+.tabstrip{flex:1;display:flex;gap:4px;overflow-x:auto;scroll-behavior:smooth;scrollbar-width:none}
+.tabstrip::-webkit-scrollbar{display:none}
+.tabbtn{flex:none;background:var(--panel2);border:1px solid var(--line);color:var(--dim);padding:7px 14px;font-family:'Titillium Web';font-weight:600;font-size:11px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;white-space:nowrap}
+.tabbtn:hover{color:var(--ink)}
+.tabbtn.active{border-color:var(--red);color:#fff;background:linear-gradient(180deg,#1d1214,#18181b)}
+.tabpane{display:none}
+.tabpane.active{display:block}
+.blockgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.setblock{background:#0e0e10;border:1px solid var(--line);padding:10px 12px}
 .kv span:last-child{color:var(--ink)}
 .kv span:first-child{color:var(--dim)}
 
@@ -306,26 +321,73 @@ async function toggleTrack(carId, trackId){
 }
 window.toggleTrack = toggleTrack;
 
-function renderSetup(obj){
-  if (!obj || !Object.keys(obj).length) return `<div class="kv"><span>Setup non disponibile</span><span></span></div>`;
-  const walk = (o, depth) => Object.entries(o).map(([k,v]) =>
-    (v && typeof v === "object")
-      ? `<h${Math.min(4+depth,5)}>${esc(k)}</h${Math.min(4+depth,5)}>` + walk(v, depth+1)
-      : `<div class="kv"><span>${esc(k)}</span><span>${esc(v)}</span></div>`
-  ).join("");
-  return walk(obj, 0);
+const labelize = k => k.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/^./, c => c.toUpperCase());
+
+function renderLeaves(obj){
+  let html = "", rows = "";
+  for (const [k,v] of Object.entries(obj)){
+    if (v && typeof v === "object"){
+      if (rows) { html += `<div class="kvgrid">${rows}</div>`; rows = ""; }
+      html += `<h5>${esc(labelize(k))}</h5>` + renderLeaves(v);
+    } else {
+      rows += `<div class="kv"><span>${esc(labelize(k))}</span><span>${esc(v)}</span></div>`;
+    }
+  }
+  if (rows) html += `<div class="kvgrid">${rows}</div>`;
+  return html;
 }
+
+function renderBlocks(section){
+  const blocks = []; let general = "";
+  for (const [k,v] of Object.entries(section)){
+    if (v && typeof v === "object")
+      blocks.push(`<div class="setblock"><h4>${esc(labelize(k))}</h4>${renderLeaves(v)}</div>`);
+    else
+      general += `<div class="kv"><span>${esc(labelize(k))}</span><span>${esc(v)}</span></div>`;
+  }
+  if (general) blocks.unshift(`<div class="setblock"><h4>Generale</h4><div class="kvgrid">${general}</div></div>`);
+  return `<div class="blockgrid">${blocks.join("")}</div>`;
+}
+
+function renderSetup(obj, stintId){
+  if (!obj || !Object.keys(obj).length) return `<div class="kv"><span>Setup non disponibile</span><span></span></div>`;
+  const tabs = Object.entries(obj);
+  const btns = tabs.map(([k],i) =>
+    `<button class="tabbtn ${i===0?"active":""}" data-tab="t${i}" onclick="selectSetupTab(${stintId},'t${i}')">${esc(labelize(k))}</button>`).join("");
+  const panes = tabs.map(([k,v],i) =>
+    `<div class="tabpane ${i===0?"active":""}" data-tab="t${i}">${renderBlocks(v && typeof v==="object" ? v : {[k]:v})}</div>`).join("");
+  return `<div class="setuptabs">
+    <div class="tabsrow">
+      <button class="tabarrow" onclick="scrollSetupTabs(${stintId},-1)">‹</button>
+      <div class="tabstrip" id="tabstrip${stintId}">${btns}</div>
+      <button class="tabarrow" onclick="scrollSetupTabs(${stintId},1)">›</button>
+    </div>
+    <div class="tabpanes" id="tabpanes${stintId}">${panes}</div>
+  </div>`;
+}
+window.selectSetupTab = (stintId, tab) => {
+  const strip = document.getElementById("tabstrip"+stintId), panes = document.getElementById("tabpanes"+stintId);
+  strip.querySelectorAll(".tabbtn").forEach(b => b.classList.toggle("active", b.dataset.tab===tab));
+  panes.querySelectorAll(".tabpane").forEach(p => p.classList.toggle("active", p.dataset.tab===tab));
+  strip.querySelector(".tabbtn.active")?.scrollIntoView({behavior:"smooth", inline:"center", block:"nearest"});
+};
+window.scrollSetupTabs = (stintId, dir) => {
+  const btns = [...document.getElementById("tabstrip"+stintId).querySelectorAll(".tabbtn")];
+  const cur = btns.findIndex(b => b.classList.contains("active"));
+  const next = Math.min(Math.max(cur+dir, 0), btns.length-1);
+  selectSetupTab(stintId, btns[next].dataset.tab);
+};
 
 async function viewLaps(sessionId){
   const openSetups = new Set();
-  const load = async () => {
+  let lastHtml = null;
+  const load = async (isPoll=false) => {
     const d = await api(`sessions/${sessionId}/laps`);
     const s = d.session, stints = d.stints;
-    setCrumb([{txt:"Le mie auto",href:"#/"},{txt:s.car},{txt:s.track},{txt:stype(s.session_type)}]);
     const all = stints.flatMap(st=>st.laps);
     const best = all.length ? Math.min(...all.map(l=>l.time_s)) : null;
     const wxTd = v => `<td class="wxcol">${v==null?"–":v}</td>`;
-    app.innerHTML = `
+    const html = `
       <h2 class="vt">${stype(s.session_type)} — <em>tempi</em></h2>
       <div class="board">
         <div class="lbl">Giro migliore</div>
@@ -343,7 +405,7 @@ async function viewLaps(sessionId){
           <span class="stmeta">${st.laps.length} giri · best ${fmt(stBest)}</span>
           <span class="arrow">${openSetups.has(st.id)?"▾":"▸"}</span>
         </div>
-        <div class="setupbox ${openSetups.has(st.id)?"open":""}" id="setup${st.id}">${renderSetup(st.setup)}</div>
+        <div class="setupbox ${openSetups.has(st.id)?"open":""}" id="setup${st.id}">${renderSetup(st.setup, st.id)}</div>
         <table><thead><tr><th>Giro</th><th>Tempo</th><th>🌡️</th><th>🛣️</th><th>💧</th><th>💨</th></tr></thead><tbody>` +
         st.laps.map(l=>`<tr class="${l.time_s===best?"best":""}"><td>${l.lap}</td><td>${fmt(l.time_s)}</td>` +
           wxTd(l.air_temp!=null?l.air_temp.toFixed(1)+"°":null) +
@@ -353,13 +415,19 @@ async function viewLaps(sessionId){
         `</tr>`).join("") + `</tbody></table></section>`;
       }).join("") :
       `<div class="empty">Ancora nessun giro completato in questa sessione.</div>`);
+    // Durante gli aggiornamenti automatici, ridisegna solo se qualcosa è davvero cambiato:
+    // evita il "lampeggio" di ridisegnare la stessa identica pagina ogni 5 secondi.
+    if (isPoll && html === lastHtml) return;
+    lastHtml = html;
+    setCrumb([{txt:"Le mie auto",href:"#/"},{txt:s.car},{txt:s.track},{txt:stype(s.session_type)}]);
+    app.innerHTML = html;
     window.toggleSetup = id => {
       openSetups.has(id) ? openSetups.delete(id) : openSetups.add(id);
       document.getElementById("setup"+id)?.classList.toggle("open");
     };
   };
-  await load();
-  pollTimer = setInterval(() => load().catch(()=>{}), 5000);
+  await load(false);
+  pollTimer = setInterval(() => load(true).catch(()=>{}), 5000);
 }
 
 /* ---------- Router ---------- */
