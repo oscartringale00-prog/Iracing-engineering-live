@@ -1,36 +1,50 @@
-# iRacing Telemetry — Archivio sessioni
+# iRacing Telemetry — v3 con account utente (Firebase)
 
-Agente Windows → backend cloud (Railway + Postgres) → archivio web navigabile:
-Auto → Piste → Sessioni (data/ora + tipo) → Tempi giro.
+Agente Windows (collegato una volta all'account) → backend Railway + Postgres → archivio web personale con login.
 
-## Aggiornamento del deploy esistente su Railway (da fare una volta)
-1. **Aggiungi il database**: nel progetto Railway clicca "+ Add" (o "New") → "Database" → "Add PostgreSQL". Railway lo crea in pochi secondi.
-2. **Collega il database al server**: apri il servizio web (quello collegato a GitHub) → scheda "Variables" → "Add Variable Reference" → scegli `DATABASE_URL` dal servizio Postgres. Salva: il server riparte da solo con la variabile.
-3. **Carica i file aggiornati su GitHub** (sovrascrivendo i vecchi): `server.py`, `index.html`, `agent.py`, `schema.sql`, `requirements.txt`, `Procfile`. Railway rifà il deploy da solo. Le tabelle vengono create automaticamente al primo avvio (schema.sql).
-4. **Ricostruisci l'exe** (l'agente è cambiato):
-   pip install pyirsdk pyinstaller websocket-client
-   python -m PyInstaller --onefile --name iRacingLive agent.py
-   Il nuovo `dist/iRacingLive.exe` va ridistribuito ai clienti. Il token in `config.ini` resta lo stesso, quindi chi aveva già il programma ritrova i propri dati.
+## 1. Console Firebase (da fare una volta)
+1. https://console.firebase.google.com → apri il tuo progetto (o creane uno).
+2. Authentication → "Sign-in method" → abilita **Email/Password** e **Google**.
+3. Authentication → "Settings" → "Authorized domains" → aggiungi il dominio Railway:
+   `web-production-8fbbf.up.railway.app`
+4. Impostazioni progetto (ingranaggio) → "Generale" → sezione "Le tue app" → se non c'è, crea una App Web (icona `</>`), poi copia i valori `apiKey`, `authDomain`, `projectId`.
 
-## Test locale senza iRacing
-Serve un Postgres locale raggiungibile come `postgresql://postgres:postgres@localhost/iracing`
-(oppure imposta la variabile d'ambiente `DATABASE_URL`).
-    python -m uvicorn server:app --port 8000     # terminale 1
-    python agent.py --demo                        # terminale 2 (backend = ws://localhost:8000 in config.ini)
-La demo simula 2 sessioni (Prove Libere + Gara) su Monza con la MX-5 Cup, un giro ogni ~8s.
+## 2. index.html
+In cima allo script c'è il blocco CONFIGURAZIONE FIREBASE: sostituisci
+`INCOLLA_API_KEY` e `INCOLLA_PROJECT_ID` con i valori copiati al punto 1.4.
 
-## Protocollo agente → server (WebSocket /ws/agent?token=...)
-- {"type":"session_start","uid":"...","car":"...","track":"...","sessionType":"Race","sessionNum":0,"ts":...}
-  (uid generato dall'agente: le riconnessioni non duplicano la sessione)
-- {"type":"lap","lap":12,"lastLapTime":92.431,"ts":...}
-- {"type":"hb"}
+## 3. Railway
+Servizio web → Variables → aggiungi:
+  FIREBASE_PROJECT_ID = <il tuo projectId>
+Il database esistente verrà riusato ma lo schema è nuovo (si riparte da zero, come deciso).
+Per pulizia, puoi svuotare il vecchio DB: riquadro Postgres → Data/Query → esegui:
+  DROP TABLE IF EXISTS laps, stints, sessions, cars, tracks CASCADE;
+(le tabelle nuove si creano da sole al riavvio del server).
 
-## API REST (tutte con ?token=...)
-- GET /api/cars
-- GET /api/cars/{car_id}/tracks
-- GET /api/cars/{car_id}/tracks/{track_id}/sessions
-- GET /api/sessions/{id}/laps
+## 4. GitHub
+Carica sovrascrivendo: server.py, index.html, agent.py, schema.sql, requirements.txt.
+Railway rifà il deploy da solo.
 
-## Note
-- Ogni utente vede solo i propri dati (filtro per token in ogni query).
-- I dati sono permanenti: vivono nel Postgres di Railway, non nel filesystem del server.
+## 5. Exe (⚠️ terminale)
+    pip install pyirsdk websocket-client pyinstaller
+    python -m PyInstaller --onefile --name iRacingLive agent.py
+Il nuovo dist/iRacingLive.exe sostituisce il vecchio.
+
+## Flusso utente finale
+1. Si registra sul sito (email/password o Google).
+2. Apre iRacingLive.exe: si apre il browser su "Collega questo PC" → un click.
+3. Da lì in poi: solo doppio click. I dati finiscono nel suo profilo, visibili da qualsiasi dispositivo dopo il login.
+Sezione "Dispositivi" nel sito per scollegare i PC.
+
+## Test locale senza Firebase/iRacing
+    AUTH_DEBUG=1 python -m uvicorn server:app --port 8000
+    python agent.py --demo        # backend = ws://localhost:8000 in config.ini
+Con AUTH_DEBUG=1 il server accetta token fittizi "debug-<uid>" (SOLO per test locale: mai impostare AUTH_DEBUG in produzione).
+
+## API (tutte con header Authorization: Bearer <idToken Firebase>)
+- POST /api/device/start → {code}            (senza auth: lo chiama l'exe)
+- GET  /api/device/claim?code=X              (senza auth: polling dell'exe)
+- POST /api/device/link {code}               (con auth: conferma dell'utente)
+- GET/DELETE /api/devices[/id]
+- GET /api/cars · /api/cars/{id}/tracks · /api/cars/{c}/tracks/{t}/sessions · /api/sessions/{id}/laps
+WebSocket agente: /ws/agent?device_key=...
