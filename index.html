@@ -15,7 +15,7 @@
 body{background:var(--bg);color:var(--ink);font-family:'Titillium Web',sans-serif;min-height:100vh}
 
 header{border-bottom:1px solid var(--line);background:linear-gradient(180deg,#101012,#0b0b0c)}
-.head-in{max-width:760px;margin:0 auto;padding:18px 16px 14px;display:flex;align-items:center;gap:14px}
+.head-in{max-width:min(96vw,1040px);margin:0 auto;padding:18px 16px 14px;display:flex;align-items:center;gap:14px}
 .slash{width:26px;height:34px;background:var(--red);transform:skewX(-18deg);flex:none}
 .brand{font-style:italic;font-weight:900;font-size:20px;letter-spacing:.06em;text-transform:uppercase;line-height:1.05}
 .brand small{display:block;font-style:normal;font-weight:600;font-size:10px;letter-spacing:.3em;color:var(--dim)}
@@ -23,13 +23,13 @@ header{border-bottom:1px solid var(--line);background:linear-gradient(180deg,#10
 .uarea a{color:var(--dim);cursor:pointer;text-decoration:none;border:1px solid var(--line);padding:4px 10px}
 .uarea a:hover{color:var(--ink);border-color:var(--red)}
 
-nav#crumb{max-width:760px;margin:0 auto;padding:14px 16px 0;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);display:flex;gap:8px;flex-wrap:wrap}
+nav#crumb{max-width:min(96vw,1040px);margin:0 auto;padding:14px 16px 0;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);display:flex;gap:8px;flex-wrap:wrap}
 nav#crumb a{color:var(--dim);text-decoration:none}
 nav#crumb a:hover{color:var(--ink)}
 nav#crumb .sep{color:var(--red)}
 nav#crumb .cur{color:var(--ink)}
 
-main{max-width:760px;margin:0 auto;padding:14px 16px 60px}
+main{max-width:min(96vw,1040px);margin:0 auto;padding:14px 16px 60px}
 h2.vt{font-style:italic;font-weight:900;text-transform:uppercase;font-size:26px;letter-spacing:.04em;margin:10px 0 16px}
 h2.vt em{color:var(--red);font-style:italic}
 
@@ -51,6 +51,17 @@ h2.vt em{color:var(--red);font-style:italic}
 .sess .sdate{color:var(--dim);flex:1}
 .sess .smeta{font-family:'Chivo Mono',monospace;font-size:12px;color:var(--dim)}
 .wxline{display:block;font-size:11px;color:var(--dim);margin-top:2px}
+
+.delx{flex:none;background:transparent;border:1px solid var(--line);color:var(--dim);width:26px;height:26px;line-height:1;font-size:13px;cursor:pointer;opacity:.5;transition:opacity .15s,border-color .15s,color .15s}
+.row:hover .delx, .sessrow:hover .delx{opacity:1}
+.delx:hover{border-color:var(--red);color:var(--red);opacity:1}
+
+.modalwrap{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px}
+.modalcard{max-width:380px;width:100%;background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--red);padding:22px}
+.modalcard h3{font-style:italic;font-weight:900;text-transform:uppercase;font-size:17px;margin-bottom:10px}
+.modalcard p{font-size:13px;color:var(--dim);line-height:1.5;margin-bottom:18px}
+.modalbtns{display:flex;gap:10px}
+.modalbtns .btn{margin-top:0}
 
 .board{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--red);padding:20px;margin-bottom:16px}
 .board .lbl{font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--dim)}
@@ -89,6 +100,81 @@ h2.vt em{color:var(--red);font-style:italic}
 .tabpane.active{display:block}
 .blockgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
 .setblock{background:#0e0e10;border:1px solid var(--line);padding:10px 12px}
+
+tr.clk{cursor:pointer}
+tr.clk:hover td{background:rgba(225,6,0,.12)}
+.graphcol{text-align:right;width:28px}
+.telwrap{display:grid;grid-template-columns:1fr;gap:14px}
+@media(min-width:720px){.telwrap{grid-template-columns:minmax(320px,38%) 1fr;align-items:start}}
+@media(min-width:720px){.telmap{position:sticky;top:12px}}
+.telmap{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--red);padding:8px}
+.telmap canvas{display:block;touch-action:none}
+.telgraphs{display:flex;flex-direction:column;gap:8px}
+.telg{position:relative;background:var(--panel);border:1px solid var(--line);padding:14px 8px 4px}
+.telglabel{position:absolute;top:4px;left:10px;font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.telg canvas{display:block}
+.telhint{margin-top:12px;font-size:12px;color:var(--dim)}
+.tabbar{display:flex;gap:0;border-bottom:1px solid var(--line);margin-bottom:14px}
+.tabbtn{background:none;border:none;border-bottom:2px solid transparent;color:var(--dim);padding:10px 18px;font-family:'Titillium Web';font-weight:700;font-size:13px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+.tabbtn:hover{color:var(--ink)}
+.tabbtn.on{color:var(--ink);border-bottom-color:var(--red)}
+.plotcard{background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--red);padding:14px}
+.plothead{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:10px}
+.plottitle{font-weight:700;font-size:14px;letter-spacing:.06em;text-transform:uppercase}
+.plotlegend{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11px;color:var(--dim)}
+.plotlegend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-left:8px}
+.plotlegend i.lseg{width:14px;height:0;border-top:2px solid var(--dim);border-radius:0}
+.plotlegend i.lseg.dash{border-top-style:dashed}
+#gripcv{display:block;width:100%}
+.plotna{padding:40px 10px;text-align:center;color:var(--dim);font-size:13px}
+.plotctrl{margin-top:12px;border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:10px}
+.ctrlrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12px}
+.ctrlrow label{color:var(--dim);letter-spacing:.06em;text-transform:uppercase;font-size:11px;min-width:150px}
+.ctrlrow input[type=range]{flex:1;min-width:140px;accent-color:var(--red)}
+.ctrlval{font-family:'Chivo Mono',monospace;font-weight:700;min-width:44px}
+.ptcount{font-family:'Chivo Mono',monospace;font-size:11px;color:var(--dim)}
+.presets{display:flex;gap:6px}
+.preset.on{border-color:var(--red);color:var(--red)}
+.txtin{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:10px 12px;font-family:'Titillium Web';font-size:14px}
+.txtin:focus{outline:none;border-color:var(--red)}
+.txtin::placeholder{color:var(--dim)}
+.switchrow{display:flex;align-items:center;gap:10px;padding:12px 0 4px;cursor:pointer;font-size:14px}
+.switchrow input{accent-color:var(--red);width:18px;height:18px;cursor:pointer}
+.warnbox{font-size:12px;color:var(--dim);line-height:1.6;border-left:3px solid var(--red);padding:8px 0 8px 12px;margin-top:8px}
+.trow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--line)}
+.trow:last-child{border-bottom:none}
+.tname{font-weight:600;font-size:14px;color:var(--ink);text-decoration:none}
+a.tname:hover{color:var(--red)}
+.tmeta{font-size:12px;color:var(--dim);flex:1}
+.tag{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em}
+.pend{color:var(--red)}
+.btn.small{padding:6px 12px;font-size:12px;margin-top:0;width:auto}
+.robadge{display:inline-block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);border:1px solid var(--line);padding:4px 10px;margin-bottom:12px}
+.telbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+#addlapbtn:disabled{opacity:.5;cursor:not-allowed}
+.lapchips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.lapchip{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--line);padding:5px 8px 5px 6px;font-size:12px}
+.lapchip .lapcolor{width:20px;height:20px;border:none;background:none;padding:0;cursor:pointer}
+.lapchip .lapcolor:disabled{cursor:default}
+.lapchiplbl{color:var(--ink)}
+.lapx{background:transparent;border:none;color:var(--dim);cursor:pointer;font-size:12px;padding:0 2px}
+.lapx:hover{color:var(--red)}
+.picklist{display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto;margin-bottom:16px}
+.pickrow{display:flex;flex-direction:column;align-items:flex-start;gap:2px;background:#0e0e10;border:1px solid var(--line);padding:10px 12px;cursor:pointer;text-align:left;width:100%}
+.pickrow:hover{border-color:var(--red)}
+.pkmain{font-weight:600;font-size:13px;color:var(--ink)}
+.pksub{font-family:'Chivo Mono',monospace;font-size:11px;color:var(--dim)}
+.chansel{position:relative;margin-bottom:12px}
+.chanbtn{background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:8px 14px;font-family:'Titillium Web';font-weight:600;font-size:12px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+.chanbtn:hover{border-color:var(--red)}
+.chanbtn span{color:var(--dim)}
+.chanmenu{position:absolute;z-index:20;margin-top:4px;background:var(--panel);border:1px solid var(--line);border-top:2px solid var(--red);padding:6px;min-width:240px;max-height:320px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.chanrow{display:flex;align-items:center;gap:10px;padding:7px 10px;font-size:14px;cursor:pointer}
+.chanrow:hover{background:var(--panel2)}
+.chanrow input{accent-color:var(--red);width:16px;height:16px;cursor:pointer}
+.tellegend{margin-left:8px;font-size:9px;letter-spacing:0;text-transform:none}
+.tellegend i{font-style:normal;margin:0 2px 0 6px}
+.telna{padding:16px 8px;text-align:center;color:var(--dim);font-size:12px}
 .kv span:last-child{color:var(--ink)}
 .kv span:first-child{color:var(--dim)}
 
@@ -108,6 +194,8 @@ tr.best td{color:#fff;background:linear-gradient(90deg,rgba(225,6,0,.22),transpa
 .auth input{width:100%;background:#0e0e10;border:1px solid var(--line);color:var(--ink);padding:10px 12px;font-family:inherit;font-size:14px}
 .auth input:focus{outline:none;border-color:var(--red)}
 .btn{display:block;width:100%;margin-top:16px;background:var(--red);color:#fff;border:none;padding:12px;font-family:inherit;font-weight:600;font-size:14px;text-transform:uppercase;letter-spacing:.1em;cursor:pointer}
+.btn.safe{background:#f0f0f2;color:#0b0b0c}
+.btn.safe:hover{background:#fff}
 .btn:hover{background:#c00500}
 .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--ink);text-transform:none;letter-spacing:0}
 .btn.ghost:hover{border-color:var(--red)}
@@ -156,6 +244,25 @@ const cache = {carName:{}};
 let pollTimer = null;
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function confirmModal(title, body, okLabel, danger){
+  return new Promise(resolve => {
+    const wrap = document.createElement("div");
+    wrap.className = "modalwrap";
+    wrap.innerHTML = `<div class="modalcard">
+      <h3>${esc(title)}</h3>
+      <p>${esc(body)}</p>
+      <div class="modalbtns">
+        <button class="btn ghost" id="mcancel">Annulla</button>
+        <button class="btn${danger===false?" safe":""}" id="mok">${esc(okLabel || "Cancella")}</button>
+      </div></div>`;
+    document.body.appendChild(wrap);
+    const close = v => { wrap.remove(); resolve(v); };
+    wrap.addEventListener("click", e => { if (e.target === wrap) close(false); });
+    wrap.querySelector("#mcancel").onclick = () => close(false);
+    wrap.querySelector("#mok").onclick = () => close(true);
+  });
+}
 const fmt = s => { const m = Math.floor(s/60); return `${m}:${(s-m*60).toFixed(3).padStart(6,"0")}`; };
 const fdate = iso => new Date(iso).toLocaleString("it-IT",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
 const stype = t => {
@@ -236,9 +343,58 @@ const itAuthErr = e => ({
   "auth/weak-password":"Password troppo corta (minimo 6 caratteri).",
 }[e.code] || "Errore: " + (e.message||e.code||e));
 
+/* ---------- Profilo pilota e visibilità ---------- */
+let myProfile = null;        // {pilot_name, is_public}
+let skipName = false;        // se l'utente rimanda l'inserimento del nome
+// suffisso da aggiungere alle chiamate quando si legge l'archivio di un altro pilota
+const P = pilot => pilot ? `?pilot=${encodeURIComponent(pilot)}` : "";
+
+async function loadProfile(force){
+  if (myProfile && !force) return myProfile;
+  try { myProfile = await api("profile"); } catch(e){ myProfile = {pilot_name:null, is_public:false}; }
+  return myProfile;
+}
+
 function renderUserArea(u){
-  uarea.innerHTML = `<span>${esc(u.email||"")}</span><a href="#/devices">Dispositivi</a><a id="lo">Esci</a>`;
+  const nm = (myProfile && myProfile.pilot_name) ? myProfile.pilot_name : (u.email||"");
+  uarea.innerHTML = `<span>${esc(nm)}</span>`
+    + `<a href="#/pilots">Piloti</a><a href="#/teams">Team</a>`
+    + `<a href="#/devices">Dispositivi</a><a href="#/settings">Impostazioni</a><a id="lo">Esci</a>`;
   document.getElementById("lo").onclick = () => auth.signOut();
+}
+
+/* ---------- Nome pilota (primo accesso) ---------- */
+async function viewPilotName(){
+  setCrumb([{txt:"Nome pilota"}]);
+  app.innerHTML = `<div class="linkcard">
+    <h2 class="vt">Come ti chiami in <em>pista</em>?</h2>
+    <p style="color:var(--dim);font-size:14px;line-height:1.6">Inserisci il nome del tuo account iRacing.
+      È il nome con cui appari agli altri piloti quando condividi i tuoi dati o entri in un team.
+      Puoi cambiarlo quando vuoi dalle impostazioni.</p>
+    <input id="pn" class="txtin" placeholder="Es. Oscar Tringale" maxlength="60" autofocus>
+    <div class="err" id="pnerr" hidden></div>
+    <button class="btn" id="pnsave">Salva</button>
+    <button class="btn ghost" id="pnskip" style="margin-top:8px">Lo farò dopo</button>
+  </div>`;
+  const inp = document.getElementById("pn");
+  document.getElementById("pnsave").onclick = async () => {
+    const v = inp.value.trim();
+    if (!v){ const e=document.getElementById("pnerr"); e.hidden=false; e.textContent="Scrivi il tuo nome pilota."; return; }
+    await api("profile", {method:"PUT", body: JSON.stringify({pilot_name:v, is_public: myProfile?.is_public||false})});
+    await loadProfile(true); renderUserArea(auth.currentUser); location.hash = "#/";
+  };
+  inp.onkeydown = e => { if (e.key === "Enter") document.getElementById("pnsave").click(); };
+  document.getElementById("pnskip").onclick = () => { skipName = true; location.hash = "#/"; route(); };
+}
+
+// Chiede il nome se manca, prima di azioni che lo richiedono. Ritorna true se si può procedere.
+async function ensurePilotName(){
+  await loadProfile();
+  if (myProfile.pilot_name) return true;
+  const ok = await confirmModal("Serve il tuo nome pilota",
+    "Per usare le funzioni condivise (pubblico e team) devi prima scegliere il nome con cui appari agli altri. Vuoi impostarlo ora?", "Imposta ora", false);
+  if (ok) location.hash = "#/settings";
+  return false;
 }
 
 /* ---------- Device link ---------- */
@@ -277,33 +433,260 @@ async function viewDevices(){
   window.unlink = async id => { await api("devices/"+id, {method:"DELETE"}); viewDevices(); };
 }
 
-/* ---------- Archivio ---------- */
-async function viewCars(){
-  setCrumb([{txt:"Le mie auto"}]);
-  const cars = await api("cars");
-  app.innerHTML = `<h2 class="vt">Le mie <em>auto</em></h2>` + (cars.length ?
-    cars.map(c => `<div class="row" onclick="location.hash='#/car/${c.id}'">
-      <div class="name">${esc(c.name)}</div>
-      <div class="meta">${c.sessions} session${c.sessions==1?"e":"i"}</div>
-      <div class="arrow">›</div></div>`).join("") :
-    `<div class="empty">Nessuna telemetria salvata.<br>Avvia il programma sul PC di gara ed entra in pista: le auto appariranno qui da sole.</div>`);
-  cars.forEach(c => cache.carName[c.id] = c.name);
+/* ---------- Impostazioni ---------- */
+async function viewSettings(){
+  setCrumb([{txt:"Le mie auto",href:"#/"},{txt:"Impostazioni"}]);
+  await loadProfile(true);
+  const teams = await api("teams").catch(()=>[]);
+  app.innerHTML = `
+    <h2 class="vt">Impo<em>stazioni</em></h2>
+    <div class="board" style="margin-bottom:16px">
+      <div class="ctx">Nome pilota</div>
+      <div style="padding:12px 0 0">
+        <input id="pn" class="txtin" maxlength="60" value="${esc(myProfile.pilot_name||"")}" placeholder="Nome del tuo account iRacing">
+        <button class="btn" id="pnsave" style="margin-top:10px">Salva nome</button>
+      </div>
+    </div>
+
+    <div class="board" style="margin-bottom:16px">
+      <div class="ctx">Condivisione pubblica</div>
+      <label class="switchrow">
+        <input type="checkbox" id="pub" ${myProfile.is_public?"checked":""}>
+        <span>Rendi pubblici i miei dati</span>
+      </label>
+      <p class="warnbox">Attenzione: acceso, <b>qualsiasi pilota registrato</b> potrà vedere tutto il tuo archivio —
+        auto, piste, sessioni, tempi, telemetria <b>e i tuoi setup</b>. Non è possibile scegliere cosa condividere: è tutto o niente.
+        Spento, ti vedono solo i tuoi compagni di team.</p>
+    </div>
+
+    <div class="board">
+      <div class="ctx">I miei team</div>
+      ${teams.length ? teams.map(t=>`<div class="trow">
+          <a href="#/team/${t.id}" class="tname">${esc(t.name)}</a>
+          <span class="tmeta">${t.members} membr${t.members==1?"o":"i"}${t.is_manager?" · sei il manager":""}${t.is_manager&&t.pending?` · <b class="pend">${t.pending} richieste</b>`:""}</span>
+        </div>`).join("")
+      : `<div class="empty" style="padding:14px">Non fai parte di nessun team. <a href="#/teams">Creane uno o cercane uno</a>.</div>`}
+    </div>`;
+
+  document.getElementById("pnsave").onclick = async () => {
+    const v = document.getElementById("pn").value.trim();
+    if (!v) return alert("Il nome pilota non può essere vuoto.");
+    await api("profile",{method:"PUT",body:JSON.stringify({pilot_name:v,is_public:myProfile.is_public})});
+    await loadProfile(true); renderUserArea(auth.currentUser); viewSettings();
+  };
+  document.getElementById("pub").onchange = async e => {
+    const want = e.target.checked;
+    if (want){
+      if (!myProfile.pilot_name){ e.target.checked=false; return alert("Imposta prima il tuo nome pilota."); }
+      const ok = await confirmModal("Rendere pubblico tutto l'archivio?",
+        "Chiunque sia registrato potrà vedere le tue sessioni, la tua telemetria e i tuoi setup. Puoi spegnere quando vuoi.", "Rendi pubblico", false);
+      if (!ok){ e.target.checked = false; return; }
+    }
+    await api("profile",{method:"PUT",body:JSON.stringify({pilot_name:myProfile.pilot_name,is_public:want})});
+    await loadProfile(true);
+  };
 }
 
-async function viewTracks(carId){
-  const carName = cache.carName[carId] || (await api("cars")).find(c=>c.id==carId)?.name || "Auto";
+/* ---------- Team ---------- */
+async function viewTeams(){
+  setCrumb([{txt:"Le mie auto",href:"#/"},{txt:"Team"}]);
+  const teams = await api("teams").catch(()=>[]);
+  app.innerHTML = `
+    <h2 class="vt">I miei <em>team</em></h2>
+    ${teams.length ? teams.map(t=>`<div class="row" onclick="location.hash='#/team/${t.id}'">
+        <div class="name">${esc(t.name)}</div>
+        <div class="meta">${t.members} membr${t.members==1?"o":"i"}${t.is_manager?" · manager":""}${t.is_manager&&t.pending?` · ${t.pending} richieste`:""}</div>
+        <div class="arrow">›</div></div>`).join("")
+      : `<div class="empty">Non fai ancora parte di nessun team.</div>`}
+
+    <div class="board" style="margin-top:18px">
+      <div class="ctx">Crea un nuovo team</div>
+      <div style="padding:12px 0 0">
+        <input id="tnew" class="txtin" maxlength="60" placeholder="Nome del team">
+        <button class="btn" id="tcreate" style="margin-top:10px">Crea team (sarai il manager)</button>
+      </div>
+    </div>
+
+    <div class="board" style="margin-top:18px">
+      <div class="ctx">Cerca un team</div>
+      <div style="padding:12px 0 0">
+        <input id="tq" class="txtin" placeholder="Nome del team da cercare">
+        <div id="tres" style="margin-top:10px"></div>
+      </div>
+    </div>`;
+
+  document.getElementById("tcreate").onclick = async () => {
+    if (!await ensurePilotName()) return;
+    const v = document.getElementById("tnew").value.trim();
+    if (!v) return alert("Scrivi il nome del team.");
+    try { const t = await api("teams",{method:"POST",body:JSON.stringify({name:v})}); location.hash = "#/team/"+t.id; }
+    catch(e){ alert("Creazione non riuscita."); }
+  };
+  const q = document.getElementById("tq"), res = document.getElementById("tres");
+  let tmr;
+  const search = async () => {
+    const list = await api("teams/search?q="+encodeURIComponent(q.value.trim())).catch(()=>[]);
+    res.innerHTML = list.length ? list.map(t=>`<div class="trow">
+        <span class="tname">${esc(t.name)}</span>
+        <span class="tmeta">${t.members} membr${t.members==1?"o":"i"}${t.manager?" · manager: "+esc(t.manager):""}</span>
+        ${t.is_member ? `<span class="tag">già dentro</span>`
+          : t.pending ? `<span class="tag">richiesta inviata</span>`
+          : `<button class="btn small" data-join="${t.id}">Chiedi di entrare</button>`}
+      </div>`).join("") : `<div class="empty" style="padding:12px">Nessun team trovato.</div>`;
+    res.querySelectorAll("[data-join]").forEach(b => b.onclick = async () => {
+      if (!await ensurePilotName()) return;
+      const ok = await confirmModal("Chiedere di entrare in questo team?",
+        "Se il manager accetta, i membri del team potranno vedere tutto il tuo archivio (telemetria e setup) e tu il loro, anche a condivisione pubblica spenta.", "Invia richiesta", false);
+      if (!ok) return;
+      try { await api(`teams/${b.dataset.join}/request`,{method:"POST",body:"{}"}); search(); }
+      catch(e){ alert("Richiesta non riuscita."); }
+    });
+  };
+  q.oninput = () => { clearTimeout(tmr); tmr = setTimeout(search, 250); };
+  search();
+}
+
+async function viewTeam(teamId){
+  const teams = await api("teams").catch(()=>[]);
+  const t = teams.find(x=>x.id==teamId);
+  if (!t){ app.innerHTML = `<div class="empty">Team non trovato o non ne fai parte.</div>`; return; }
+  setCrumb([{txt:"Le mie auto",href:"#/"},{txt:"Team",href:"#/teams"},{txt:t.name}]);
+  const members = await api(`teams/${teamId}/members`).catch(()=>[]);
+  const reqs = t.is_manager ? await api(`teams/${teamId}/requests`).catch(()=>[]) : [];
+  app.innerHTML = `
+    <h2 class="vt">${esc(t.name)}</h2>
+    ${t.is_manager ? `<div class="board" style="margin-bottom:16px">
+      <div class="ctx">Richieste di ingresso</div>
+      ${reqs.length ? reqs.map(r=>`<div class="trow">
+          <span class="tname">${esc(r.pilot)}</span>
+          <span class="tmeta">${fdate(r.created_at)}</span>
+          <button class="btn small" data-ok="${r.id}">Accetta</button>
+          <button class="btn small ghost" data-no="${r.id}">Rifiuta</button>
+        </div>`).join("") : `<div class="empty" style="padding:12px">Nessuna richiesta in attesa.</div>`}
+    </div>` : ""}
+
+    <div class="board">
+      <div class="ctx">Membri</div>
+      ${members.map(m=>`<div class="trow">
+        <span class="tname">${esc(m.name)}${m.is_me?" (tu)":""}</span>
+        <span class="tmeta">${m.is_manager?"manager":"membro"}</span>
+        ${!m.is_me && !m.is_manager ? `<a class="btn small ghost" href="#/pilot/${encodeURIComponent(m.id)}">Archivio</a>`:""}
+        ${t.is_manager && !m.is_me ? `<button class="btn small ghost" data-rm="${m.id}">Rimuovi</button>`:""}
+      </div>`).join("")}
+    </div>
+    <button class="btn ghost" id="leave" style="margin-top:18px">Esci dal team</button>`;
+
+  app.querySelectorAll("[data-ok]").forEach(b => b.onclick = async () => {
+    const ok = await confirmModal("Accettare questo pilota?",
+      "Entrando nel team vedrà tutto l'archivio dei membri (telemetria e setup) e i membri vedranno il suo.", "Accetta", false);
+    if (!ok) return;
+    await api(`teams/${teamId}/requests/${b.dataset.ok}`,{method:"POST",body:JSON.stringify({action:"approve"})});
+    viewTeam(teamId);
+  });
+  app.querySelectorAll("[data-no]").forEach(b => b.onclick = async () => {
+    await api(`teams/${teamId}/requests/${b.dataset.no}`,{method:"POST",body:JSON.stringify({action:"reject"})});
+    viewTeam(teamId);
+  });
+  app.querySelectorAll("[data-rm]").forEach(b => b.onclick = async () => {
+    const ok = await confirmModal("Rimuovere questo membro?", "Non vedrà più i dati del team e i membri non vedranno i suoi.", "Rimuovi");
+    if (!ok) return;
+    await api(`teams/${teamId}/members/${encodeURIComponent(b.dataset.rm)}`,{method:"DELETE"});
+    viewTeam(teamId);
+  });
+  document.getElementById("leave").onclick = async () => {
+    const ok = await confirmModal("Uscire dal team?",
+      t.is_manager ? "Sei il manager: uscendo, il ruolo passa al membro più anziano. Se resti l'ultimo, il team viene sciolto."
+                   : "Non vedrai più i dati dei compagni e loro non vedranno i tuoi.", "Esci dal team");
+    if (!ok) return;
+    await api(`teams/${teamId}/leave`,{method:"POST",body:"{}"});
+    location.hash = "#/teams";
+  };
+}
+
+/* ---------- Piloti ---------- */
+async function viewPilots(){
+  setCrumb([{txt:"Le mie auto",href:"#/"},{txt:"Piloti"}]);
+  app.innerHTML = `<h2 class="vt">Altri <em>piloti</em></h2>
+    <input id="pq" class="txtin" placeholder="Cerca un pilota per nome">
+    <div id="plist" style="margin-top:14px"></div>
+    <div class="telhint">Vedi i piloti che hanno reso pubblico il loro archivio e i tuoi compagni di team. Puoi consultare i loro dati in sola lettura.</div>`;
+  const q = document.getElementById("pq"), list = document.getElementById("plist");
+  let tmr;
+  const search = async () => {
+    const pl = await api("pilots?q="+encodeURIComponent(q.value.trim())).catch(()=>[]);
+    list.innerHTML = pl.length ? pl.map(p=>`<div class="row" onclick="location.hash='#/pilot/${encodeURIComponent(p.id)}'">
+        <div class="name">${esc(p.name)}</div>
+        <div class="meta">${p.teammate?"compagno di team":"pubblico"}</div>
+        <div class="arrow">›</div></div>`).join("")
+      : `<div class="empty">Nessun pilota visibile.<br>Vedrai qui chi rende pubblico il proprio archivio e i tuoi compagni di team.</div>`;
+  };
+  q.oninput = () => { clearTimeout(tmr); tmr = setTimeout(search, 250); };
+  search();
+}
+
+/* ---------- Archivio (proprio o di un altro pilota, in sola lettura) ---------- */
+let viewPilot = null;        // uid del pilota che si sta guardando, null = sono io
+let shownPilotName = "";
+
+async function viewCars(pilot){
+  viewPilot = pilot || null;
+  const mine = !viewPilot;
+  if (mine) shownPilotName = "";
+  if (!mine && !shownPilotName){
+    const pl = await api("pilots").catch(()=>[]);
+    shownPilotName = (pl.find(p=>p.id===viewPilot)||{}).name || "Pilota";
+  }
+  setCrumb(mine ? [{txt:"Le mie auto"}] : [{txt:"Piloti",href:"#/pilots"},{txt:shownPilotName}]);
+  const cars = await api("cars"+P(viewPilot));
+  const title = mine ? `Le mie <em>auto</em>` : `${esc(shownPilotName)} — <em>auto</em>`;
+  const hrefOf = c => mine ? `#/car/${c.id}` : `#/pilot/${encodeURIComponent(viewPilot)}/car/${c.id}`;
+  app.innerHTML = `<h2 class="vt">${title}</h2>`
+    + (mine ? "" : `<div class="robadge">Archivio di un altro pilota · sola lettura</div>`)
+    + (cars.length ?
+    cars.map(c => `<div class="row" onclick="location.hash='${hrefOf(c)}'">
+      <div class="name">${esc(c.name)}</div>
+      <div class="meta">${c.sessions} session${c.sessions==1?"e":"i"}</div>
+      ${mine?`<button class="delx" title="Cancella auto" onclick="event.stopPropagation();deleteCar(${c.id},'${esc(c.name).replace(/'/g,"\\'")}',${c.sessions})">✕</button>`:""}
+      <div class="arrow">›</div></div>`).join("") :
+    `<div class="empty">${mine?"Nessuna telemetria salvata.<br>Avvia il programma sul PC di gara ed entra in pista: le auto appariranno qui da sole."
+                            :"Questo pilota non ha ancora dati."}</div>`);
+  cars.forEach(c => cache.carName[c.id] = c.name);
+}
+window.deleteCar = async (id, name, sessions) => {
+  const ok = await confirmModal(`Cancellare "${name}"?`,
+    `Verranno eliminate anche ${sessions} session${sessions==1?"e":"i"} e tutti i giri contenuti. L'operazione non si può annullare.`);
+  if (!ok) return;
+  try { await api(`cars/${id}`, {method:"DELETE"}); viewCars(); }
+  catch(e){ alert("Cancellazione non riuscita, riprova."); }
+};
+
+async function viewTracks(carId, pilot){
+  viewPilot = pilot || null;
+  const mine = !viewPilot;
+  const carName = cache.carName[carId] || (await api("cars"+P(viewPilot))).find(c=>c.id==carId)?.name || "Auto";
   cache.carName[carId] = carName;
-  setCrumb([{txt:"Le mie auto",href:"#/"},{txt:carName}]);
-  const tracks = await api(`cars/${carId}/tracks`);
-  app.innerHTML = `<h2 class="vt">${esc(carName)} — <em>piste</em></h2>` + (tracks.length ?
+  setCrumb(mine ? [{txt:"Le mie auto",href:"#/"},{txt:carName}]
+                : [{txt:"Piloti",href:"#/pilots"},{txt:shownPilotName||"Pilota",href:`#/pilot/${encodeURIComponent(viewPilot)}`},{txt:carName}]);
+  const tracks = await api(`cars/${carId}/tracks`+P(viewPilot));
+  app.innerHTML = `<h2 class="vt">${esc(carName)} — <em>piste</em></h2>`
+    + (mine ? "" : `<div class="robadge">Archivio di un altro pilota · sola lettura</div>`)
+    + (tracks.length ?
     tracks.map(t => `<div class="acc" id="acc${t.id}">
       <div class="row" onclick="toggleTrack(${carId},${t.id})">
         <div class="name">${esc(t.name)}</div>
         <div class="meta">${t.sessions} session${t.sessions==1?"e":"i"}</div>
+        ${mine?`<button class="delx" title="Cancella pista" onclick="event.stopPropagation();deleteTrack(${carId},${t.id},'${esc(t.name).replace(/'/g,"\\'")}',${t.sessions})">✕</button>`:""}
         <div class="arrow">▾</div></div>
       <div class="sess" id="sess${t.id}"></div></div>`).join("") :
     `<div class="empty">Nessuna pista registrata con questa auto.</div>`);
 }
+window.deleteTrack = async (carId, trackId, name, sessions) => {
+  const ok = await confirmModal(`Cancellare "${name}"?`,
+    `Verranno eliminate ${sessions} session${sessions==1?"e":"i"} (con questa auto) e tutti i giri contenuti. L'operazione non si può annullare.`);
+  if (!ok) return;
+  try { await api(`cars/${carId}/tracks/${trackId}`, {method:"DELETE"}); viewTracks(carId); }
+  catch(e){ alert("Cancellazione non riuscita, riprova."); }
+};
 
 async function toggleTrack(carId, trackId){
   const acc = document.getElementById("acc"+trackId);
@@ -312,12 +695,27 @@ async function toggleTrack(carId, trackId){
   acc.classList.add("open");
   const box = document.getElementById("sess"+trackId);
   box.innerHTML = `<a>Caricamento…</a>`;
-  const ss = await api(`cars/${carId}/tracks/${trackId}/sessions`);
-  box.innerHTML = ss.map(s => `<a href="#/session/${s.id}">
+  const mine = !viewPilot;
+  const ss = await api(`cars/${carId}/tracks/${trackId}/sessions`+P(viewPilot));
+  box.innerHTML = ss.map(s => `<a href="#/session/${s.id}" class="sessrow">
     <span class="stype ${stype(s.session_type)==="Gara"?"race":""}">${stype(s.session_type)}</span>
     <span class="sdate">${fdate(s.started_at)}${wxInline(s)?`<span class="wxline">${wxInline(s)}</span>`:""}</span>
-    <span class="smeta">${s.laps} giri${s.best?" · best "+fmt(s.best):""}</span></a>`).join("")
+    <span class="smeta">${s.laps} giri${s.best?" · best "+fmt(s.best):""}</span>
+    ${mine?`<button class="delx" title="Cancella sessione" onclick="event.preventDefault();event.stopPropagation();deleteSession(${carId},${trackId},${s.id},'${esc(stype(s.session_type))}',${s.laps})">✕</button>`:""}
+    </a>`).join("")
     || `<a>Nessuna sessione.</a>`;
+}
+window.deleteSession = async (carId, trackId, sessionId, label, laps) => {
+  const ok = await confirmModal(`Cancellare la sessione "${label}"?`,
+    `Verranno eliminati tutti i ${laps} giri registrati. L'operazione non si può annullare.`);
+  if (!ok) return;
+  try { await api(`sessions/${sessionId}`, {method:"DELETE"}); await toggleTrackForceOpen(carId, trackId); }
+  catch(e){ alert("Cancellazione non riuscita, riprova."); }
+};
+async function toggleTrackForceOpen(carId, trackId){
+  const acc = document.getElementById("acc"+trackId);
+  acc.classList.remove("open");
+  await toggleTrack(carId, trackId);
 }
 window.toggleTrack = toggleTrack;
 
@@ -403,8 +801,9 @@ async function viewLaps(sessionId){
       <div class="board">
         <div class="lbl">Giro migliore</div>
         <div class="big">${best?fmt(best):"--:--.---"}</div>
-        <div class="ctx">${esc(s.car)} · ${esc(s.track)} · ${fdate(s.started_at)}</div>
+        <div class="ctx">${s.pilot?esc(s.pilot)+" · ":""}${esc(s.car)} · ${esc(s.track)} · ${fdate(s.started_at)}</div>
       </div>
+      ${s.pilot?`<div class="robadge">Sessione di un altro pilota · sola lettura</div>`:""}
       ${wxChips(s).length ? `<div class="wx">` + wxChips(s).map(([e,l,v]) =>
         `<div class="chip"><span class="ico">${e}</span><span class="cl">${l}</span><span class="cv">${v}</span></div>`).join("") + `</div>` : ""}` +
       (stints.length ? stints.map((st,i) => {
@@ -417,12 +816,13 @@ async function viewLaps(sessionId){
           <span class="arrow">${openSetups.has(st.id)?"▾":"▸"}</span>
         </div>
         <div class="setupbox ${openSetups.has(st.id)?"open":""}" id="setup${st.id}">${renderSetup(st.setup, st.id)}</div>
-        <table><thead><tr><th>Giro</th><th>Tempo</th><th>🌡️</th><th>🛣️</th><th>💧</th><th>💨</th></tr></thead><tbody>` +
-        st.laps.map(l=>`<tr class="${l.time_s===best?"best":""}"><td>${l.lap}</td><td>${fmt(l.time_s)}</td>` +
+        <table><thead><tr><th>Giro</th><th>Tempo</th><th>🌡️</th><th>🛣️</th><th>💧</th><th>💨</th><th></th></tr></thead><tbody>` +
+        st.laps.map(l=>`<tr class="${l.time_s===best?"best":""} ${l.has_telemetry?"clk":""}" ${l.has_telemetry?`onclick="location.hash='#/lap/${l.id}'"`:""}><td>${l.lap}</td><td>${fmt(l.time_s)}</td>` +
           wxTd(l.air_temp!=null?l.air_temp.toFixed(1)+"°":null) +
           wxTd(l.track_temp!=null?l.track_temp.toFixed(1)+"°":null) +
           wxTd(l.humidity!=null?Math.round(l.humidity*100)+"%":null) +
           wxTd(l.wind_vel!=null?(l.wind_vel*3.6).toFixed(0)+" "+compass(l.wind_dir):null) +
+          `<td class="graphcol">${l.has_telemetry?"📈":""}</td>` +
         `</tr>`).join("") + `</tbody></table></section>`;
       }).join("") :
       `<div class="empty">Ancora nessun giro completato in questa sessione.</div>`);
@@ -441,20 +841,826 @@ async function viewLaps(sessionId){
   pollTimer = setInterval(() => load(true).catch(()=>{}), 5000);
 }
 
+/* ---------- Vista telemetria giro ---------- */
+// Catalogo grafici: id, etichetta, lista di serie [chiave, colore, nomeLegenda], trasformazione valore
+const TEL_CATALOG = [
+  ["speed",   "Velocità (km/h)",           [["speed","#e10600"]],                         v=>v*3.6,        v=>Math.round(v)+" km/h"],
+  ["throttle","Acceleratore (%)",          [["throttle","#35d07f"]],                      v=>v*100,        v=>Math.round(v)+"%"],
+  ["brake",   "Freno (%)",                 [["brake","#f2b63d"]],                         v=>v*100,        v=>Math.round(v)+"%"],
+  ["clutch",  "Frizione (%)",              [["clutch","#c07bff"]],                        v=>v*100,        v=>Math.round(v)+"%"],
+  ["gear",    "Marcia",                    [["gear","#8ab4ff"]],                          v=>v,            v=>String(Math.round(v))],
+  ["rpm",     "RPM",                       [["rpm","#ff8a3d"]],                            v=>v,            v=>Math.round(v)+" rpm"],
+  ["steer",   "Sterzo (°)",                [["steer","#c9c9d1"]],                         v=>v*180/Math.PI, v=>v.toFixed(0)+"°"],
+  ["lataccel","G laterale",                [["lataccel","#e10600"]],                      v=>v/9.81,       v=>v.toFixed(2)+" G"],
+  ["lonaccel","G longitudinale",           [["lonaccel","#35d07f"]],                      v=>v/9.81,       v=>v.toFixed(2)+" G"],
+  ["vertaccel","G verticale",              [["vertaccel","#8ab4ff"]],                     v=>v/9.81,       v=>v.toFixed(2)+" G"],
+  ["rh_front","Altezze anteriori (mm)",    [["rh_lf","#e10600","LF"],["rh_rf","#8ab4ff","RF"]], v=>v,      v=>v.toFixed(1)+" mm"],
+  ["rh_rear", "Altezze posteriori (mm)",   [["rh_lr","#e10600","LR"],["rh_rr","#8ab4ff","RR"]], v=>v,      v=>v.toFixed(1)+" mm"],
+  ["sh_front","Ammortizzatori ant. (m)",   [["shock_lf","#e10600","LF"],["shock_rf","#8ab4ff","RF"]], v=>v, v=>v.toFixed(4)+" m"],
+  ["sh_rear", "Ammortizzatori post. (m)",  [["shock_lr","#e10600","LR"],["shock_rr","#8ab4ff","RR"]], v=>v, v=>v.toFixed(4)+" m"],
+];
+const TEL_DEFAULT = ["speed","throttle","brake","gear","steer"];
+
+function loadTelPrefs(){
+  try {
+    const raw = localStorage.getItem("telemetryChannels");
+    if (raw) { const a = JSON.parse(raw); if (Array.isArray(a) && a.length) return a; }
+  } catch(e){}
+  return TEL_DEFAULT.slice();
+}
+function saveTelPrefs(active){
+  try { localStorage.setItem("telemetryChannels", JSON.stringify(active)); } catch(e){}
+}
+
+async function viewLapTelemetry(lapId){
+  app.innerHTML = `<div class="empty">Caricamento telemetria…</div>`;
+  const d0 = await api(`laps/${lapId}/telemetry`);
+  const L0 = d0.lap;
+  setCrumb([{txt:"Le mie auto",href:"#/"},{txt:L0.car},{txt:L0.track},{txt:"Giro "+L0.lap}]);
+
+  const MAX_LAPS = 3;
+  const PALETTE = ["#ffffff","#8ab4ff","#35d07f","#f2b63d","#c07bff"];
+  // Ogni giro in confronto: {id, label, color, ch (channels), n, lapdistArr}
+  const laps = [{
+    id: lapId, color: "#e10600",
+    label: `Giro ${L0.lap} · ${esc(L0.car)}`,
+    ch: d0.channels, n: d0.channels.lapdist.length, main: true
+  }];
+  const trackId = L0.track_id;
+  let active = loadTelPrefs();
+
+  app.innerHTML = `
+    <h2 class="vt">Analisi <em>telemetrica</em></h2>
+    <div class="board" style="margin-bottom:14px">
+      <div class="ctx">${L0.pilot?esc(L0.pilot)+" · ":""}${esc(L0.car)} · ${esc(L0.track)} · tempo ${fmt(L0.time_s)}</div>
+    </div>
+    <div class="tabbar">
+      <button class="tabbtn on" data-tab="tel">Telemetria</button>
+      <button class="tabbtn" data-tab="plots">Grafici</button>
+    </div>
+    <div class="telbar">
+      <div class="chansel" id="chanselbox">
+        <button class="chanbtn" id="chanbtn">Canali <span id="chancount"></span> ▾</button>
+        <div class="chanmenu" id="chanmenu" hidden>
+          ${TEL_CATALOG.map(g=>`<label class="chanrow"><input type="checkbox" data-id="${g[0]}"><span>${esc(g[1])}</span></label>`).join("")}
+        </div>
+      </div>
+      <button class="chanbtn" id="addlapbtn">+ Aggiungi giro</button>
+    </div>
+    <div class="lapchips" id="lapchips"></div>
+
+    <div id="tab-tel">
+      <div class="telwrap">
+        <div class="telmap" id="telmapbox"><canvas id="map"></canvas></div>
+        <div class="telgraphs" id="telgraphs"></div>
+      </div>
+      <div class="telhint">Passa il mouse sui grafici o sulla mappa per muovere il cursore. Sui grafici: rotellina per lo zoom, doppio click per iniziare a selezionare un tratto e un click per chiuderlo, tasto destro per annullare.<span id="zoominfo"></span></div>
+    </div>
+
+    <div id="tab-plots" hidden></div>`;
+
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const setup = (cv, h) => {
+    cv.style.width = "100%"; cv.style.height = h + "px";
+    cv.width = cv.clientWidth * dpr; cv.height = h * dpr;
+    const ctx = cv.getContext("2d"); ctx.scale(dpr, dpr);
+    return ctx;
+  };
+
+  // Per un giro e una posizione 0→1, trova l'indice del campione con lapdist più vicina
+  function idxAt(lap, rel){
+    if (rel < 0) return -1;
+    const arr = lap.ch.lapdist;
+    // ricerca lineare "vicina" (i lapdist sono crescenti 0→1)
+    let lo = 0, hi = arr.length - 1;
+    while (lo < hi){ const mid = (lo+hi)>>1; if (arr[mid] < rel) lo = mid+1; else hi = mid; }
+    if (lo > 0 && Math.abs(arr[lo-1]-rel) < Math.abs(arr[lo]-rel)) return lo-1;
+    return lo;
+  }
+
+  let map = null, G = [], curRel = -1;
+  // Zoom orizzontale condiviso da TUTTI i grafici: finestra visibile in frazione 0→1 del giro
+  let zx0 = 0, zx1 = 1, selStart = null;
+  const MINWIN = 0.02;   // tratto minimo visualizzabile (2% del giro)
+  const H = 90;
+  const mapH = () => window.innerWidth >= 720 ? 340 : 240;
+
+  function buildMap(){
+    const withMap = laps.filter(l => l.ch.lat && l.ch.lat.length === l.n && (Math.max(...l.ch.lat)-Math.min(...l.ch.lat))>1e-6);
+    const box = document.getElementById("telmapbox");
+    if (!withMap.length){ box.style.display = "none"; map = null; return; }
+    box.style.display = "";
+    const cv = document.getElementById("map");
+    const ctx = setup(cv, mapH());
+    let laMin=Infinity,laMax=-Infinity,loMin=Infinity,loMax=-Infinity;
+    withMap.forEach(l => { l.ch.lat.forEach(v=>{if(v<laMin)laMin=v;if(v>laMax)laMax=v;});
+                           l.ch.lon.forEach(v=>{if(v<loMin)loMin=v;if(v>loMax)loMax=v;}); });
+    // Correzione geografica: a queste latitudini 1° di longitudine è più corto di 1° di latitudine.
+    // Moltiplicando la longitudine per cos(lat media) la forma del tracciato diventa fedele.
+    const latMid = (laMin+laMax)/2;
+    const kx = Math.cos(latMid * Math.PI/180) || 1;
+    const view = (map && map.view) ? map.view : {zoom:1, ox:0, oy:0};
+    map = {cv, ctx, withMap, laMin, laMax, loMin, loMax, view, kx};
+    attachMapInteraction();
+  }
+  function drawMap(rel){
+    if (!map) return;
+    const {ctx, withMap, laMin, laMax, loMin, loMax, view, kx} = map;
+    const w = map.cv.clientWidth, h = mapH(), pad = 16;
+    ctx.clearRect(0,0,w,h);
+    // estensione geografica corretta (longitudine scalata da kx)
+    const spanLo = ((loMax-loMin)*kx) || 1, spanLa = (laMax-laMin) || 1;
+    // scala uniforme su entrambi gli assi = proporzioni reali, nessuno stiramento
+    const base = Math.min((w-2*pad)/spanLo, (h-2*pad)/spanLa);
+    const sc = base * view.zoom;
+    const cx = w/2 + view.ox, cy = h/2 + view.oy;
+    const midLo = (loMin+loMax)/2, midLa = (laMin+laMax)/2;
+    const PX = (lo)=> cx + (lo-midLo)*kx*sc;
+    const PY = (la)=> cy - (la-midLa)*sc;
+    map._PX = PX; map._PY = PY;
+    withMap.forEach(l => {
+      ctx.strokeStyle = l.color; ctx.globalAlpha = l.main ? 1 : .85;
+      ctx.lineWidth = l.main ? 2.4 : 1.6; ctx.beginPath();
+      const la=l.ch.lat, lo=l.ch.lon;
+      for (let j=0;j<la.length;j++){ const a=PX(lo[j]),b=PY(la[j]); j?ctx.lineTo(a,b):ctx.moveTo(a,b); }
+      ctx.stroke(); ctx.globalAlpha = 1;
+    });
+    // Linea del traguardo (sul tracciato) + freccia direzione (poco fuori dal circuito) — solo giro principale
+    const main = withMap.find(l=>l.main) || withMap[0];
+    if (main){
+      const la=main.ch.lat, lo=main.ch.lon;
+      const x0=PX(lo[0]), y0=PY(la[0]);
+      const k = Math.min(la.length-1, 6);
+      const ang = Math.atan2(PY(la[k])-y0, PX(lo[k])-x0);   // verso di marcia
+      const perp0 = ang + Math.PI/2;
+
+      // --- Linea del traguardo: trattino perpendicolare a cavallo del tracciato ---
+      const tl = 10;
+      ctx.strokeStyle = "#fff"; ctx.lineWidth = 2.5; ctx.lineCap = "butt";
+      ctx.beginPath();
+      ctx.moveTo(x0 + Math.cos(perp0)*tl, y0 + Math.sin(perp0)*tl);
+      ctx.lineTo(x0 - Math.cos(perp0)*tl, y0 - Math.sin(perp0)*tl);
+      ctx.stroke();
+
+      // --- Freccia direzione: appena fuori dal circuito (lato esterno), stile premium ---
+      let perp = perp0;
+      const cxMap = map.cv.clientWidth/2, cyMap = mapH()/2;
+      if ((x0 + Math.cos(perp)*10 - cxMap)**2 + (y0 + Math.sin(perp)*10 - cyMap)**2 <
+          (x0 - Math.cos(perp)*10 - cxMap)**2 + (y0 - Math.sin(perp)*10 - cyMap)**2) {
+        perp += Math.PI;
+      }
+      const off = 15; // il più vicino possibile al tracciato, restando fuori
+      const bx = x0 + Math.cos(perp)*off, by = y0 + Math.sin(perp)*off;
+      const s = 9;
+      ctx.save();
+      ctx.translate(bx, by); ctx.rotate(ang);
+      // alone morbido per far risaltare la freccia (stile premium)
+      ctx.shadowColor = "rgba(0,0,0,.55)"; ctx.shadowBlur = 5; ctx.shadowOffsetY = 1;
+      // corpo: gambo affusolato + punta con leggera sfumatura
+      const grad = ctx.createLinearGradient(-s, 0, s*1.3, 0);
+      grad.addColorStop(0, "#c9c9d1"); grad.addColorStop(1, "#ffffff");
+      ctx.strokeStyle = grad; ctx.lineWidth = 2.4; ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(-s*1.1, 0); ctx.lineTo(s*0.2, 0); ctx.stroke();
+      ctx.shadowBlur = 3;
+      ctx.beginPath();
+      ctx.moveTo(s*1.35, 0);
+      ctx.lineTo(-s*0.05, s*0.62);
+      ctx.quadraticCurveTo(s*0.35, 0, -s*0.05, -s*0.62);
+      ctx.closePath();
+      ctx.fillStyle = grad; ctx.fill();
+      ctx.shadowColor = "transparent";
+      ctx.strokeStyle = "rgba(11,11,12,.9)"; ctx.lineWidth = 1; ctx.stroke();
+      ctx.restore();
+    }
+    if (rel >= 0) withMap.forEach(l => {
+      const i = idxAt(l, rel); if (i<0) return;
+      ctx.fillStyle = l.color; ctx.beginPath(); ctx.arc(PX(l.ch.lon[i]), PY(l.ch.lat[i]), 5, 0, 7); ctx.fill();
+      ctx.strokeStyle = "#0b0b0c"; ctx.lineWidth = 1.5; ctx.stroke();
+    });
+  }
+  // Dato un punto (mx,my) in pixel canvas, trova la lapdist del punto più vicino
+  // sulla traiettoria del giro PRINCIPALE (snap alla pista).
+  function snapRelOnMap(mx, my){
+    const main = map.withMap.find(l=>l.main) || map.withMap[0];
+    if (!main) return -1;
+    const PX = map._PX, PY = map._PY, la = main.ch.lat, lo = main.ch.lon, dist = main.ch.lapdist;
+    let best = Infinity, bestJ = 0;
+    for (let j=0;j<la.length;j++){
+      const dx = PX(lo[j])-mx, dy = PY(la[j])-my, d = dx*dx+dy*dy;
+      if (d < best){ best = d; bestJ = j; }
+    }
+    return dist[bestJ];
+  }
+  function attachMapInteraction(){
+    const cv = map.cv, view = map.view;
+    const clampZoom = z => Math.max(1, Math.min(8, z));
+    const zoomAt = (mx, my, factor) => {
+      const w = cv.clientWidth, h = mapH();
+      const oldZoom = view.zoom, newZoom = clampZoom(view.zoom * factor);
+      if (newZoom === oldZoom) return;
+      const cxOld = w/2 + view.ox, cyOld = h/2 + view.oy, ratio = newZoom/oldZoom;
+      view.ox = mx - (mx - cxOld)*ratio - w/2;
+      view.oy = my - (my - cyOld)*ratio - h/2;
+      view.zoom = newZoom;
+      if (view.zoom === 1){ view.ox = 0; view.oy = 0; }
+      drawMap(curRel);
+    };
+    cv.onwheel = e => {
+      e.preventDefault();
+      const r = cv.getBoundingClientRect();
+      zoomAt(e.clientX - r.left, e.clientY - r.top, e.deltaY < 0 ? 1.0196 : 1/1.0196);
+    };
+    let dragging = false, moved = false, lastX = 0, lastY = 0;
+    cv.onmousedown = e => { dragging = true; moved = false; lastX = e.clientX; lastY = e.clientY; cv.style.cursor = "grabbing"; };
+    window.addEventListener("mousemove", e => {
+      if (!dragging) return;
+      moved = true;
+      view.ox += e.clientX - lastX; view.oy += e.clientY - lastY;
+      lastX = e.clientX; lastY = e.clientY; drawMap(curRel);
+    });
+    window.addEventListener("mouseup", () => { dragging = false; cv.style.cursor = "grab"; });
+    // Movimento del mouse SENZA premere = il pallino segue il mouse (snap alla pista) e sincronizza i grafici
+    cv.onmousemove = e => {
+      if (dragging) return;
+      const r = cv.getBoundingClientRect();
+      const rel = snapRelOnMap(e.clientX - r.left, e.clientY - r.top);
+      if (rel >= 0) drawAll(rel);
+    };
+    cv.onmouseleave = () => { if (!dragging) drawAll(-1); };
+    cv.style.cursor = "grab";
+    let pinchDist = 0;
+    cv.ontouchstart = e => {
+      if (e.touches.length === 1){ dragging = true; lastX = e.touches[0].clientX; lastY = e.touches[0].clientY; }
+      else if (e.touches.length === 2){ dragging = false; pinchDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); }
+    };
+    cv.ontouchmove = e => {
+      e.preventDefault();
+      if (e.touches.length === 1 && dragging){
+        view.ox += e.touches[0].clientX - lastX; view.oy += e.touches[0].clientY - lastY;
+        lastX = e.touches[0].clientX; lastY = e.touches[0].clientY; drawMap(curRel);
+      } else if (e.touches.length === 2){
+        const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        const r = cv.getBoundingClientRect();
+        const mx = (e.touches[0].clientX + e.touches[1].clientX)/2 - r.left;
+        const my = (e.touches[0].clientY + e.touches[1].clientY)/2 - r.top;
+        // pinch smorzato: variazione più graduale invece del rapporto grezzo tra le dita
+        if (pinchDist) zoomAt(mx, my, 1 + (d/pinchDist - 1)*0.117);
+        pinchDist = d;
+      }
+    };
+    cv.ontouchend = () => { dragging = false; pinchDist = 0; };
+  }
+
+  function buildGraphs(){
+    const host = document.getElementById("telgraphs");
+    const chosen = TEL_CATALOG.filter(g => active.includes(g[0]));
+    const multi = laps.length > 1;
+    host.innerHTML = chosen.map((g,i)=>{
+      const series = g[2];
+      const legend = (!multi && series.length > 1)
+        ? `<span class="tellegend">${series.map(s=>`<i style="color:${s[1]}">■</i>${s[2]}`).join(" ")}</span>` : "";
+      return `<div class="telg"><span class="telglabel">${esc(g[1])}${legend}</span>
+        <canvas id="g${i}"></canvas>
+        <div class="telna" id="na${i}" hidden>Dati non disponibili</div></div>`;
+    }).join("") || `<div class="empty">Nessun canale selezionato. Apri "Canali" e spuntane almeno uno.</div>`;
+
+    G = chosen.map((g,i) => {
+      const cv = document.getElementById("g"+i);
+      const na = document.getElementById("na"+i);
+      const multi = laps.length > 1;
+      // Per ogni giro, i valori del/dei canale/i. Con più giri, i canali a 2 serie usano solo la 1a serie.
+      const catSeries = g[2];
+      const perLap = laps.map(l => {
+        const useSeries = multi ? catSeries.slice(0,1) : catSeries;
+        const seriesVals = useSeries
+          .filter(s => Array.isArray(l.ch[s[0]]) && l.ch[s[0]].length === l.n)
+          .map(s => ({ color: multi ? l.color : s[1], name: multi ? "" : (s[2]||""), vals: l.ch[s[0]].map(g[3]) }));
+        return { lap:l, seriesVals };
+      }).filter(x => x.seriesVals.length);
+      if (!perLap.length){ cv.hidden = true; na.hidden = false; return null; }
+      const ctx = setup(cv, H);
+      const allVals = perLap.flatMap(p => p.seriesVals.flatMap(s => s.vals));
+      return {cv, ctx, perLap, fmt:g[4], min:Math.min(...allVals), max:Math.max(...allVals)};
+    }).filter(Boolean);
+
+    attachInteraction();
+    drawAll(curRel);
+  }
+
+  function drawGraph(g, rel){
+    const ctx = g.ctx, w = g.cv.clientWidth, h = H, pad = 6;
+    ctx.clearRect(0,0,w,h);
+    const rng = (g.max - g.min) || 1;
+    const y = v => h - pad - (v - g.min)/rng*(h - 2*pad);
+    const span = (zx1 - zx0) || 1;
+    const mrg = span*0.02;
+    g.perLap.forEach(p => {
+      const dist = p.lap.ch.lapdist;
+      p.seriesVals.forEach(s => {
+        ctx.strokeStyle = s.color; ctx.lineWidth = p.lap.main ? 1.6 : 1.2; ctx.beginPath();
+        let started = false;
+        for (let i=0;i<s.vals.length;i++){
+          const d = dist[i];
+          if (d < zx0-mrg || d > zx1+mrg) { started = false; continue; }  // fuori finestra: salta
+          const px = (d - zx0)/span*w, py = y(s.vals[i]);
+          if (started) ctx.lineTo(px,py); else { ctx.moveTo(px,py); started = true; }
+        }
+        ctx.stroke();
+      });
+    });
+    // feedback della selezione in corso (dopo il doppio click)
+    if (selStart !== null){
+      const xs = (selStart - zx0)/span*w;
+      if (rel >= 0){
+        const xe = (rel - zx0)/span*w;
+        ctx.fillStyle = "rgba(225,6,0,.14)";
+        ctx.fillRect(Math.min(xs,xe), 0, Math.abs(xe-xs), h);
+      }
+      ctx.strokeStyle = "#e10600"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(xs,0); ctx.lineTo(xs,h); ctx.stroke();
+    }
+    if (rel >= 0) drawReadout(g, rel);
+  }
+  function drawReadout(g, rel){
+    const ctx = g.ctx;
+    const multi = laps.length > 1;
+    // una riga per serie visibile (per multi: una per giro)
+    const rows = [];
+    g.perLap.forEach(p => {
+      const i = idxAt(p.lap, rel);
+      p.seriesVals.forEach(s => {
+        const v = i>=0 ? s.vals[i] : null;
+        rows.push({ color: s.color, name: s.name, txt: (v==null||isNaN(v))?"–":g.fmt(v) });
+      });
+    });
+    ctx.font = "700 11px 'Chivo Mono', monospace";
+    const dot = multi || g.perLap.some(p=>p.seriesVals.length>1);
+    let maxW = 0;
+    rows.forEach(r => { const w = ctx.measureText((r.name?r.name+" ":"")+r.txt).width + (dot?14:0); if (w>maxW) maxW=w; });
+    const padX=6, padY=4, lineH=14;
+    const boxW = maxW+padX*2, boxH = padY*2 + rows.length*lineH, bx=8, by=20;
+    ctx.fillStyle = "rgba(10,10,12,.82)"; ctx.strokeStyle = "rgba(255,255,255,.18)"; ctx.lineWidth = 1;
+    ctx.fillRect(bx,by,boxW,boxH); ctx.strokeRect(bx,by,boxW,boxH);
+    ctx.textBaseline = "middle";
+    rows.forEach((r,i) => {
+      const ty = by+padY+lineH*i+lineH/2; let tx = bx+padX;
+      if (dot){ ctx.fillStyle = r.color; ctx.fillRect(tx, ty-4, 8, 8); tx += 12; }
+      ctx.fillStyle = "#f0f0f2"; ctx.fillText((r.name?r.name+" ":"")+r.txt, tx, ty);
+    });
+  }
+  function drawAll(rel){
+    curRel = rel;
+    const span = (zx1 - zx0) || 1;
+    G.forEach(g => {
+      drawGraph(g, rel);
+      if (rel >= zx0 && rel <= zx1){
+        const w = g.cv.clientWidth, x = (rel - zx0)/span*w;
+        g.ctx.strokeStyle = "rgba(255,255,255,.5)"; g.ctx.lineWidth = 1;
+        g.ctx.beginPath(); g.ctx.moveTo(x,0); g.ctx.lineTo(x,H); g.ctx.stroke();
+      }
+    });
+    drawMap(rel);
+  }
+  function updateZoomInfo(){
+    const el = document.getElementById("zoominfo");
+    if (!el) return;
+    el.textContent = (zx0 <= 0 && zx1 >= 1) ? ""
+      : ` · zoom ${Math.round(zx0*100)}%–${Math.round(zx1*100)}% del giro (tasto destro per azzerare)`;
+  }
+  function setWindow(a, b){
+    let x0 = Math.max(0, Math.min(1, Math.min(a,b)));
+    let x1 = Math.max(0, Math.min(1, Math.max(a,b)));
+    if (x1 - x0 < MINWIN){                       // rispetta la finestra minima
+      const mid = (x0+x1)/2;
+      x0 = Math.max(0, mid - MINWIN/2); x1 = Math.min(1, x0 + MINWIN);
+      x0 = Math.max(0, x1 - MINWIN);
+    }
+    zx0 = x0; zx1 = x1; updateZoomInfo(); drawAll(curRel);
+  }
+  function attachInteraction(){
+    if (!G.length) { drawMap(-1); return; }
+    // pixel sul grafico → frazione reale del giro, tenendo conto della finestra di zoom
+    const relFrom = clientX => {
+      const rect = G[0].cv.getBoundingClientRect();
+      const t = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      return zx0 + t*(zx1 - zx0);
+    };
+    G.forEach(g => {
+      g.cv.style.cursor = "crosshair";
+      g.cv.onmousemove = e => drawAll(relFrom(e.clientX));
+      g.cv.onmouseleave = () => drawAll(-1);
+      g.cv.ontouchstart = e => { drawAll(relFrom(e.touches[0].clientX)); e.preventDefault(); };
+      g.cv.ontouchmove  = e => { drawAll(relFrom(e.touches[0].clientX)); e.preventDefault(); };
+      // Rotellina: zoom orizzontale verso il puntatore
+      g.cv.onwheel = e => {
+        e.preventDefault();
+        const rel = relFrom(e.clientX);
+        const span = zx1 - zx0;
+        let newSpan = Math.max(MINWIN, Math.min(1, span * (e.deltaY < 0 ? 1/1.026 : 1.026)));
+        if (newSpan >= 1){ zx0 = 0; zx1 = 1; updateZoomInfo(); drawAll(curRel); return; }
+        const t = span ? (rel - zx0)/span : .5;    // il punto sotto il cursore resta fermo
+        let nx0 = rel - t*newSpan, nx1 = nx0 + newSpan;
+        if (nx0 < 0){ nx0 = 0; nx1 = newSpan; }
+        if (nx1 > 1){ nx1 = 1; nx0 = 1 - newSpan; }
+        zx0 = nx0; zx1 = nx1; updateZoomInfo(); drawAll(curRel);
+      };
+      // Doppio click = inizio selezione; click successivo = fine selezione → zoom su quel tratto
+      g.cv.ondblclick = e => { e.preventDefault(); selStart = relFrom(e.clientX); drawAll(curRel); };
+      g.cv.onclick = e => {
+        if (selStart === null) return;
+        const end = relFrom(e.clientX), start = selStart;
+        selStart = null;
+        setWindow(start, end);
+      };
+      // Tasto destro: annulla la selezione in corso, altrimenti azzera lo zoom
+      g.cv.oncontextmenu = e => {
+        e.preventDefault();
+        if (selStart !== null){ selStart = null; drawAll(curRel); }
+        else { zx0 = 0; zx1 = 1; updateZoomInfo(); drawAll(curRel); }
+      };
+    });
+  }
+
+  // Chip dei giri in confronto (colore + etichetta + rimozione)
+  function renderChips(){
+    const host = document.getElementById("lapchips");
+    host.innerHTML = laps.map((l,i) => `<span class="lapchip">
+      <input type="color" value="${l.color}" ${l.main?"disabled title='Colore fisso del giro principale'":""} data-i="${i}" class="lapcolor">
+      <span class="lapchiplbl">${l.label}</span>
+      ${l.main ? "" : `<button class="lapx" data-i="${i}" title="Rimuovi">✕</button>`}
+    </span>`).join("");
+    host.querySelectorAll(".lapcolor").forEach(inp => inp.oninput = () => {
+      laps[+inp.dataset.i].color = inp.value; buildGraphs(); drawAll(curRel); syncPlots();
+    });
+    host.querySelectorAll(".lapx").forEach(b => b.onclick = () => {
+      laps.splice(+b.dataset.i, 1); renderChips(); buildMap(); buildGraphs(); updateAddBtn(); syncPlots();
+    });
+  }
+  function updateAddBtn(){
+    const b = document.getElementById("addlapbtn");
+    if (laps.length >= MAX_LAPS){ b.disabled = true; b.textContent = "Max 3 giri"; }
+    else { b.disabled = false; b.textContent = "+ Aggiungi giro"; }
+  }
+
+  // Popup: scegli sessione (stessa pista) → scegli giro
+  document.getElementById("addlapbtn").onclick = async () => {
+    if (laps.length >= MAX_LAPS) return;
+    let pilots;
+    try { pilots = await api(`tracks/${trackId}/pilots`); }
+    catch(e){ alert("Impossibile caricare i piloti confrontabili."); return; }
+    const used = new Set(laps.map(l=>l.id));
+    const pick = await pickLapModal(pilots, trackId, used, L0.track);
+    if (!pick) return;
+    if (laps.length >= MAX_LAPS) return;
+    try {
+      const d = await api(`laps/${pick.lap.lap_id}/telemetry`);
+      const color = PALETTE[(laps.length-1) % PALETTE.length];
+      const who = d.lap.pilot ? esc(d.lap.pilot)+" · " : "";
+      laps.push({ id: pick.lap.lap_id, color,
+        label: `${who}Giro ${d.lap.lap} · ${esc(d.lap.car)}`,
+        ch: d.channels, n: d.channels.lapdist.length, main:false });
+      renderChips(); buildMap(); buildGraphs(); updateAddBtn(); syncPlots();
+    } catch(e){ alert("Telemetria non disponibile per quel giro."); }
+  };
+
+  // Dropdown canali
+  const menu = document.getElementById("chanmenu");
+  const btn = document.getElementById("chanbtn");
+  const countEl = document.getElementById("chancount");
+  menu.querySelectorAll("input[type=checkbox]").forEach(cb => cb.checked = active.includes(cb.dataset.id));
+  countEl.textContent = `(${active.length})`;
+  btn.onclick = () => { menu.hidden = !menu.hidden; };
+  menu.querySelectorAll("input[type=checkbox]").forEach(cb => {
+    cb.onchange = () => {
+      if (cb.checked){ if (!active.includes(cb.dataset.id)) active.push(cb.dataset.id); }
+      else active = active.filter(x => x !== cb.dataset.id);
+      saveTelPrefs(active); countEl.textContent = `(${active.length})`; buildGraphs();
+    };
+  });
+
+  // Aggiorna il grafico della scheda "Grafici" se è già stata costruita
+  function syncPlots(){
+    const host = document.getElementById("tab-plots");
+    if (host && host.dataset.ready === "1") drawGrip();
+  }
+
+  /* ================= SCHEDA "GRAFICI" =================
+     Struttura pensata per ospitare altri grafici in futuro: ogni grafico è una voce
+     di PLOTS con il proprio HTML e la propria funzione di disegno. */
+  const PLOT_DEFAULTS = {opacity:40, steerDeg:25, trend:true, envelope:true};
+  function loadPlotPrefs(){
+    try { const r = localStorage.getItem("plotPrefs");
+          if (r) return {...PLOT_DEFAULTS, ...JSON.parse(r)}; } catch(e){}
+    return {...PLOT_DEFAULTS};
+  }
+  function savePlotPrefs(p){ try { localStorage.setItem("plotPrefs", JSON.stringify(p)); } catch(e){} }
+  let plotPrefs = loadPlotPrefs();
+  let gripCv = null, gripCtx = null;
+
+  function plotsHtml(){
+    return `
+    <div class="plotcard">
+      <div class="plothead">
+        <span class="plottitle">Limite di aderenza</span>
+        <span class="plotlegend" id="griplegend"></span>
+      </div>
+      <canvas id="gripcv"></canvas>
+      <div class="plotna" id="gripna" hidden></div>
+      <div class="plotctrl">
+        <div class="ctrlrow">
+          <label>Visibilità punti</label>
+          <input type="range" id="gopa" min="0" max="100" value="${plotPrefs.opacity}">
+          <span class="ctrlval" id="gopav">${plotPrefs.opacity}%</span>
+          <span class="presets">
+            <button class="btn small ghost preset" data-op="10">Pulito</button>
+            <button class="btn small ghost preset" data-op="40">Dettagli</button>
+            <button class="btn small ghost preset" data-op="100">Panoramica</button>
+          </span>
+        </div>
+        <div class="ctrlrow">
+          <label>Soglia angolo sterzo</label>
+          <input type="range" id="gsteer" min="0" max="90" value="${plotPrefs.steerDeg}">
+          <span class="ctrlval" id="gsteerv">${plotPrefs.steerDeg}°</span>
+          <span class="ptcount" id="gcount"></span>
+        </div>
+        <div class="ctrlrow">
+          <label class="switchrow" style="padding:0"><input type="checkbox" id="gtrend" ${plotPrefs.trend?"checked":""}><span>Linea di tendenza</span></label>
+          <label class="switchrow" style="padding:0"><input type="checkbox" id="genv" ${plotPrefs.envelope?"checked":""}><span>Curva di inviluppo (limite grip)</span></label>
+        </div>
+      </div>
+      <div class="telhint">Ogni punto è un istante del giro. Alzando la soglia dello sterzo si tengono solo le fasi di curva: la curva di inviluppo mostra il massimo di aderenza raggiunto a ogni velocità.</div>
+    </div>`;
+  }
+
+  // Estrae i punti (velocità km/h, |G laterale|) di un giro oltre la soglia di sterzo
+  function gripPoints(l, steerDeg){
+    const th = steerDeg * Math.PI/180;
+    const sp = l.ch.speed, la = l.ch.lataccel, st = l.ch.steer;
+    const out = [];
+    if (!sp || !la || !st) return out;
+    for (let i=0;i<l.n;i++){
+      if (sp[i]==null || la[i]==null || st[i]==null) continue;
+      if (Math.abs(st[i]) < th) continue;
+      out.push([sp[i]*3.6, Math.abs(la[i])/9.81]);
+    }
+    return out;
+  }
+  // Tetto della nuvola: massimo per intervalli di velocità (percentile 95 per ignorare i picchi isolati), poi lisciato
+  function envelopeOf(pts, xMin, xMax){
+    const NB = 24, w = (xMax-xMin)/NB || 1, bins = Array.from({length:NB},()=>[]);
+    pts.forEach(([x,y]) => { const b = Math.min(NB-1, Math.max(0, Math.floor((x-xMin)/w))); bins[b].push(y); });
+    const raw = bins.map((b,i) => {
+      if (!b.length) return null;
+      b.sort((p,q)=>p-q);
+      return [xMin + w*(i+0.5), b[Math.min(b.length-1, Math.floor(b.length*0.95))]];
+    }).filter(Boolean);
+    // lisciatura su 3 punti
+    return raw.map((p,i) => {
+      const a = raw[i-1]||p, c = raw[i+1]||p;
+      return [p[0], (a[1]+p[1]+c[1])/3];
+    });
+  }
+  function trendOf(pts){
+    if (pts.length < 2) return null;
+    let sx=0, sy=0, sxy=0, sxx=0;
+    pts.forEach(([x,y])=>{ sx+=x; sy+=y; sxy+=x*y; sxx+=x*x; });
+    const n = pts.length, den = n*sxx - sx*sx;
+    if (!den) return null;
+    const m = (n*sxy - sx*sy)/den, q = (sy - m*sx)/n;
+    return x => m*x + q;
+  }
+
+  function drawGrip(){
+    if (!gripCv) return;
+    const na = document.getElementById("gripna");
+    const usable = laps.filter(l => l.ch.speed && l.ch.lataccel && l.ch.steer);
+    if (!usable.length){
+      gripCv.hidden = true; na.hidden = false;
+      na.textContent = "Questo giro non ha i canali necessari (velocità, G laterale, sterzo).";
+      return;
+    }
+    gripCv.hidden = false; na.hidden = true;
+    const ctx = gripCtx, w = gripCv.clientWidth, h = 320;
+    const padL = 46, padR = 14, padT = 14, padB = 34;
+    ctx.clearRect(0,0,w,h);
+
+    const sets = usable.map(l => ({lap:l, pts: gripPoints(l, plotPrefs.steerDeg)}));
+    const all = sets.flatMap(s=>s.pts);
+    const totalSamples = usable.reduce((a,l)=>a+l.n,0);
+    const cnt = document.getElementById("gcount");
+    if (cnt) cnt.textContent = `${all.length}/${totalSamples} punti visibili (${totalSamples?Math.round(all.length/totalSamples*100):0}%)`;
+    if (!all.length){
+      ctx.fillStyle = "var(--dim)"; ctx.font = "12px 'Titillium Web'";
+      ctx.fillStyle = "#8a8a92"; ctx.textAlign = "center";
+      ctx.fillText("Nessun punto oltre questa soglia di sterzo: abbassala.", w/2, h/2);
+      ctx.textAlign = "start";
+      return;
+    }
+    const xs = all.map(p=>p[0]), ys = all.map(p=>p[1]);
+    const xMin = Math.floor(Math.min(...xs)/20)*20, xMax = Math.ceil(Math.max(...xs)/20)*20;
+    const yMin = Math.max(0, Math.floor(Math.min(...ys)*2)/2), yMax = Math.ceil(Math.max(...ys)*2)/2 || 1;
+    const X = v => padL + (v-xMin)/((xMax-xMin)||1)*(w-padL-padR);
+    const Y = v => h-padB - (v-yMin)/((yMax-yMin)||1)*(h-padT-padB);
+
+    // griglia + assi
+    ctx.strokeStyle = "#26262a"; ctx.lineWidth = 1;
+    ctx.font = "10px 'Chivo Mono', monospace"; ctx.fillStyle = "#8a8a92";
+    for (let v=xMin; v<=xMax; v+=20){
+      ctx.beginPath(); ctx.moveTo(X(v),padT); ctx.lineTo(X(v),h-padB); ctx.stroke();
+      ctx.textAlign = "center"; ctx.fillText(String(v), X(v), h-padB+14);
+    }
+    const yStep = (yMax-yMin) > 3 ? 1 : 0.5;
+    for (let v=yMin; v<=yMax+1e-9; v+=yStep){
+      ctx.beginPath(); ctx.moveTo(padL,Y(v)); ctx.lineTo(w-padR,Y(v)); ctx.stroke();
+      ctx.textAlign = "right"; ctx.fillText(v.toFixed(1), padL-6, Y(v)+3);
+    }
+    ctx.textAlign = "center";
+    ctx.fillText("Velocità (km/h)", (padL+w-padR)/2, h-4);
+    ctx.save(); ctx.translate(12, (padT+h-padB)/2); ctx.rotate(-Math.PI/2);
+    ctx.fillText("G laterale", 0, 0); ctx.restore();
+    ctx.textAlign = "start";
+
+    const hex2rgba = (hex,a) => {
+      const n = parseInt(hex.slice(1),16);
+      return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;
+    };
+    // nuvola di punti
+    const alpha = plotPrefs.opacity/100;
+    if (alpha > 0) sets.forEach(s => {
+      ctx.fillStyle = hex2rgba(s.lap.color, alpha);
+      s.pts.forEach(([x,y]) => ctx.fillRect(X(x)-1.2, Y(y)-1.2, 2.4, 2.4));
+    });
+    // linea di tendenza (tratteggiata) e curva di inviluppo, per ogni giro nel suo colore
+    sets.forEach(s => {
+      if (plotPrefs.trend){
+        const f = trendOf(s.pts);
+        if (f){
+          ctx.setLineDash([5,4]); ctx.strokeStyle = s.lap.color; ctx.lineWidth = 1.4;
+          ctx.beginPath(); ctx.moveTo(X(xMin), Y(f(xMin))); ctx.lineTo(X(xMax), Y(f(xMax))); ctx.stroke();
+          ctx.setLineDash([]);
+        }
+      }
+      if (plotPrefs.envelope){
+        const env = envelopeOf(s.pts, xMin, xMax);
+        if (env.length > 1){
+          ctx.strokeStyle = s.lap.color; ctx.lineWidth = 2;
+          ctx.beginPath();
+          env.forEach(([x,y],i) => i?ctx.lineTo(X(x),Y(y)):ctx.moveTo(X(x),Y(y)));
+          ctx.stroke();
+        }
+      }
+    });
+    // legenda
+    const leg = document.getElementById("griplegend");
+    if (leg) leg.innerHTML = usable.map(l=>`<i style="background:${l.color}"></i>${esc(l.label)}`).join("")
+      + (plotPrefs.envelope?`<i class="lseg"></i>Inviluppo`:"")
+      + (plotPrefs.trend?`<i class="lseg dash"></i>Tendenza`:"");
+  }
+
+  function buildPlots(){
+    const host = document.getElementById("tab-plots");
+    if (host.dataset.ready !== "1"){
+      host.innerHTML = plotsHtml();
+      host.dataset.ready = "1";
+      gripCv = document.getElementById("gripcv");
+      gripCtx = setup(gripCv, 320);
+      const opa = document.getElementById("gopa"), opav = document.getElementById("gopav");
+      const stq = document.getElementById("gsteer"), stv = document.getElementById("gsteerv");
+      const markPreset = () => host.querySelectorAll(".preset").forEach(b =>
+        b.classList.toggle("on", +b.dataset.op === plotPrefs.opacity));
+      opa.oninput = () => { plotPrefs.opacity = +opa.value; opav.textContent = plotPrefs.opacity+"%";
+                            savePlotPrefs(plotPrefs); markPreset(); drawGrip(); };
+      host.querySelectorAll(".preset").forEach(b => b.onclick = () => {
+        plotPrefs.opacity = +b.dataset.op; opa.value = plotPrefs.opacity;
+        opav.textContent = plotPrefs.opacity+"%"; savePlotPrefs(plotPrefs); markPreset(); drawGrip();
+      });
+      stq.oninput = () => { plotPrefs.steerDeg = +stq.value; stv.textContent = plotPrefs.steerDeg+"°";
+                            savePlotPrefs(plotPrefs); drawGrip(); };
+      document.getElementById("gtrend").onchange = e => { plotPrefs.trend = e.target.checked; savePlotPrefs(plotPrefs); drawGrip(); };
+      document.getElementById("genv").onchange   = e => { plotPrefs.envelope = e.target.checked; savePlotPrefs(plotPrefs); drawGrip(); };
+      markPreset();
+    } else if (gripCv) {
+      gripCtx = setup(gripCv, 320);
+    }
+    drawGrip();
+  }
+
+  // Passaggio tra le schede: nessun ricaricamento, lo stato resta intatto
+  let curTab = "tel";
+  app.querySelectorAll(".tabbtn").forEach(b => b.onclick = () => {
+    curTab = b.dataset.tab;
+    app.querySelectorAll(".tabbtn").forEach(x => x.classList.toggle("on", x === b));
+    document.getElementById("tab-tel").hidden = curTab !== "tel";
+    document.getElementById("tab-plots").hidden = curTab !== "plots";
+    // il dropdown canali riguarda solo la telemetria
+    document.getElementById("chanselbox").style.display = curTab === "tel" ? "" : "none";
+    if (curTab === "plots") buildPlots();
+    else { G.forEach(g => { g.ctx = setup(g.cv, H); }); if (map) map.ctx = setup(map.cv, mapH()); drawAll(curRel); }
+  });
+
+  renderChips(); updateAddBtn(); buildMap(); buildGraphs();
+
+  window.addEventListener("resize", () => {
+    if (map) map.ctx = setup(map.cv, mapH());
+    G.forEach(g => { g.ctx = setup(g.cv, H); });
+    drawAll(-1);
+  }, {once:true});
+}
+
+// Modale a due passi per scegliere un giro confrontabile
+function pickLapModal(pilots, trackId, usedLapIds, trackName){
+  return new Promise(resolve => {
+    const wrap = document.createElement("div");
+    wrap.className = "modalwrap";
+    const close = () => { wrap.remove(); resolve(null); };
+
+    const renderPilots = () => {
+      wrap.innerHTML = `<div class="modalcard"><h3>Scegli il pilota</h3>
+        <p>Piloti con giri su ${esc(trackName)}: te stesso, chi ha reso pubblico l'archivio e i tuoi compagni di team.</p>
+        <div class="picklist">${pilots.map((p,i)=>`<button class="pickrow" data-i="${i}">
+          <span class="pkmain">${esc(p.name)}</span>
+          <span class="pksub">${p.laps} giri con telemetria</span></button>`).join("")}</div>
+        <div class="modalbtns"><button class="btn ghost" id="mc">Annulla</button></div></div>`;
+      wrap.querySelectorAll(".pickrow").forEach(b => b.onclick = () => loadSessions(pilots[+b.dataset.i]));
+      wrap.querySelector("#mc").onclick = close;
+    };
+
+    const loadSessions = async (p) => {
+      wrap.innerHTML = `<div class="modalcard"><h3>${esc(p.name)}</h3><p>Caricamento sessioni…</p></div>`;
+      let sessions = [];
+      try { sessions = await api(`tracks/${trackId}/comparable`+(p.is_me?"":`?pilot=${encodeURIComponent(p.id)}`)); }
+      catch(e){}
+      const avail = sessions.map(s => ({...s, laps: s.laps.filter(l => !usedLapIds.has(l.lap_id))}))
+                            .filter(s => s.laps.length);
+      if (!avail.length){
+        wrap.innerHTML = `<div class="modalcard"><h3>${esc(p.name)}</h3>
+          <p>Nessun altro giro disponibile da confrontare su ${esc(trackName)}.</p>
+          <div class="modalbtns"><button class="btn ghost" id="mback">Indietro</button></div></div>`;
+        wrap.querySelector("#mback").onclick = renderPilots;
+        return;
+      }
+      renderSessions(p, avail);
+    };
+
+    const renderSessions = (p, avail) => {
+      wrap.innerHTML = `<div class="modalcard"><h3>Scegli una sessione</h3>
+        <p>${esc(p.name)} · ${esc(trackName)}</p>
+        <div class="picklist">${avail.map((s,i)=>`<button class="pickrow" data-i="${i}">
+          <span class="pkmain">${esc(stype(s.session_type))} · ${esc(s.car)}</span>
+          <span class="pksub">${fdate(s.started_at)} · ${s.laps.length} giri</span></button>`).join("")}</div>
+        <div class="modalbtns"><button class="btn ghost" id="mback">Indietro</button></div></div>`;
+      wrap.querySelectorAll(".pickrow").forEach(b => b.onclick = () => renderLaps(p, avail, avail[+b.dataset.i]));
+      wrap.querySelector("#mback").onclick = renderPilots;
+    };
+
+    const renderLaps = (p, avail, s) => {
+      wrap.innerHTML = `<div class="modalcard"><h3>Scegli il giro</h3>
+        <p>${esc(p.name)} · ${esc(stype(s.session_type))} · ${esc(s.car)} · ${fdate(s.started_at)}</p>
+        <div class="picklist">${s.laps.map(l=>`<button class="pickrow" data-lap="${l.lap_id}">
+          <span class="pkmain">Giro ${l.lap}</span><span class="pksub">${fmt(l.time_s)}</span></button>`).join("")}</div>
+        <div class="modalbtns"><button class="btn ghost" id="mback">Indietro</button></div></div>`;
+      wrap.querySelectorAll(".pickrow").forEach(b => b.onclick = () => {
+        const lap = s.laps.find(x=>x.lap_id==b.dataset.lap); wrap.remove(); resolve({pilot:p, lap});
+      });
+      wrap.querySelector("#mback").onclick = () => renderSessions(p, avail);
+    };
+
+    document.body.appendChild(wrap);
+    wrap.addEventListener("click", e => { if (e.target === wrap) close(); });
+    if (!pilots.length){
+      wrap.innerHTML = `<div class="modalcard"><h3>Aggiungi giro</h3>
+        <p>Nessun pilota con giri confrontabili su ${esc(trackName)}.</p>
+        <div class="modalbtns"><button class="btn ghost" id="mc">Chiudi</button></div></div>`;
+      wrap.querySelector("#mc").onclick = close;
+    } else renderPilots();
+  });
+}
+
 /* ---------- Router ---------- */
 async function route(){
   clearInterval(pollTimer);
   const u = auth.currentUser;
   if (!u) { viewLogin(); return; }
+  await loadProfile();
   renderUserArea(u);
   try{
     if (location.pathname === "/link") { await viewLink(); return; }
     const h = location.hash.replace(/^#\/?/,"");
+    // primo accesso: chiedo il nome pilota (si può rimandare)
+    if (!myProfile.pilot_name && !skipName && h !== "settings"){ await viewPilotName(); return; }
     let m;
     if (h === "devices") await viewDevices();
-    else if ((m = h.match(/^car\/(\d+)/))) await viewTracks(+m[1]);
+    else if (h === "settings") await viewSettings();
+    else if (h === "pilots") await viewPilots();
+    else if (h === "teams") await viewTeams();
+    else if ((m = h.match(/^team\/(\d+)/))) await viewTeam(+m[1]);
+    else if ((m = h.match(/^pilot\/([^/]+)\/car\/(\d+)/))) await viewTracks(+m[2], decodeURIComponent(m[1]));
+    else if ((m = h.match(/^pilot\/([^/]+)$/))) await viewCars(decodeURIComponent(m[1]));
+    else if ((m = h.match(/^car\/(\d+)/))) await viewTracks(+m[1], null);
+    else if ((m = h.match(/^lap\/(\d+)/))) await viewLapTelemetry(+m[1]);
     else if ((m = h.match(/^session\/(\d+)/))) await viewLaps(+m[1]);
-    else await viewCars();
+    else await viewCars(null);
   }catch(e){
     app.innerHTML = `<div class="err">Errore di caricamento (${esc(e.message)}). Riprova tra qualche secondo.</div>`;
   }
