@@ -150,3 +150,25 @@ Su GitHub caricare: agent.py, server.py, schema.sql
   Impostazioni ricordate nel browser (chiave plotPrefs).
 - Cambiando scheda non si ricaricano i dati né si perde lo stato (giri, colori, canali, zoom).
 - ✅ Nessun terminale, solo index.html.
+
+## v15 — CORREZIONE CRITICA: la telemetria non arrivava mai dal PC
+Sintomo: sul sito vero i giri venivano salvati ma NON erano cliccabili (nessuna telemetria).
+Causa: nell'agente `ws.settimeout(0.005)` (5 ms) serviva a non bloccare la lettura di iRacing,
+ma in websocket-client quel timeout vale ANCHE per l'invio. I messaggi piccoli (giro) entrano
+subito nel buffer di sistema e partono; la telemetria di un giro (Road America 1:51 = ~6700
+campioni x 21 canali = ~1 MB) non ci entra: l'invio procede a tratti e dopo 5 ms va in timeout.
+Riprodotto in laboratorio riducendo il buffer di invio del socket (condizioni di rete reale):
+timeout 5 ms -> eccezione, 0 righe salvate; timeout adeguato -> salvataggio corretto.
+NON si manifestava in locale (loopback assorbe 1 MB istantaneamente) né in demo (~300 campioni).
+Correzioni in agent.py:
+ - invio spostato su un thread dedicato con coda (classe Sender): il ciclo principale non si
+   ferma mai, quindi non si perdono più i primi istanti del giro successivo (verificato: 1135
+   cicli di lettura eseguiti durante l'invio di 1 MB);
+ - timeout del socket ampio (45 s) adeguato all'invio; la lettura resta non bloccante usando
+   select (funzione drain) invece del timeout minuscolo;
+ - se la coda si intasa si scarta la telemetria (pesante) ma mai i giri, con avviso a schermo;
+ - decimali ridotti dove non tolgono informazione (-7% sul messaggio, meno spazio nel database):
+   lat/lon a 6 decimali (~11 cm), velocità 1, sterzo 3, accelerazioni 2, altezze 1.
+   Invariati: lapdist (serve all'allineamento dei giri) e corse ammortizzatori.
+⚠️ agent.py modificato -> ricostruire l'exe. Su GitHub: agent.py.
+NOTA: i giri già registrati senza telemetria restano senza (i dati non sono mai arrivati al server).

@@ -1,5 +1,8 @@
 import configparser
 import json
+import queue
+import select
+import threading
 import random
 import secrets
 import sys
@@ -27,27 +30,29 @@ TICK_S = 1 / 60  # frequenza nativa iRacing
 
 # Canali telemetria ad alta frequenza: (nome SDK, chiave, decimali)
 TELEMETRY_CHANNELS = [
-    ("Speed", "speed", 2),
+    # (nome SDK, chiave, decimali). I decimali sono il minimo che non toglie informazione utile:
+    # ridurli alleggerisce l'invio (la telemetria di un giro supera 1 MB) e lo spazio nel database.
+    ("Speed", "speed", 1),                  # m/s: 0,1 m/s = 0,36 km/h
     ("Throttle", "throttle", 3),
     ("Brake", "brake", 3),
-    ("Clutch", "clutch", 3),
-    ("SteeringWheelAngle", "steer", 4),
+    ("Clutch", "clutch", 2),
+    ("SteeringWheelAngle", "steer", 3),     # radianti: 0,001 rad = 0,06°
     ("Gear", "gear", 0),
     ("RPM", "rpm", 0),
-    ("LapDistPct", "lapdist", 5),
-    ("LatAccel", "lataccel", 3),
-    ("LonAccel", "lonaccel", 3),
-    ("VertAccel", "vertaccel", 3),
-    ("LFrideHeight", "rh_lf", 2),
-    ("RFrideHeight", "rh_rf", 2),
-    ("LRrideHeight", "rh_lr", 2),
-    ("RRrideHeight", "rh_rr", 2),
-    ("LFshockDefl", "shock_lf", 4),
+    ("LapDistPct", "lapdist", 5),           # invariato: serve ad allineare i giri nel confronto
+    ("LatAccel", "lataccel", 2),
+    ("LonAccel", "lonaccel", 2),
+    ("VertAccel", "vertaccel", 2),
+    ("LFrideHeight", "rh_lf", 1),           # mm: il decimo di mm non è significativo
+    ("RFrideHeight", "rh_rf", 1),
+    ("LRrideHeight", "rh_lr", 1),
+    ("RRrideHeight", "rh_rr", 1),
+    ("LFshockDefl", "shock_lf", 4),         # invariato: valori piccoli, la precisione conta
     ("RFshockDefl", "shock_rf", 4),
     ("LRshockDefl", "shock_lr", 4),
     ("RRshockDefl", "shock_rr", 4),
-    ("Lat", "lat", 7),
-    ("Lon", "lon", 7),
+    ("Lat", "lat", 6),                      # 6 decimali = ~11 cm, più che sufficienti per la mappa
+    ("Lon", "lon", 6),
 ]
 
 
@@ -408,6 +413,73 @@ class DemoSource:
         return events
 
 
+SEND_TIMEOUT = 45          # tempo concesso all'invio: la telemetria di un giro può superare 1 MB
+SEND_QUEUE_MAX = 12        # se la rete è troppo lenta si scartano le telemetrie più vecchie
+
+
+class Sender:
+    """Invia i messaggi su un thread dedicato.
+    Serve perché spedire la telemetria di un giro (oltre 1 MB) può richiedere secondi su rete
+    lenta: se lo facesse il ciclo principale, l'agente smetterebbe di leggere iRacing proprio
+    all'inizio del giro successivo, perdendone i primi istanti.
+    websocket-client usa lucchetti distinti per invio e lettura, quindi è sicuro leggere dal
+    thread principale mentre questo invia."""
+
+    def __init__(self, ws):
+        self.ws = ws
+        self.q = queue.Queue()
+        self.error = None
+        self._t = threading.Thread(target=self._run, daemon=True)
+        self._t.start()
+
+    def send(self, obj):
+        """Accoda un messaggio. Ritorna False se è stato scartato per congestione."""
+        if self.error:
+            return False
+        if self.q.qsize() >= SEND_QUEUE_MAX:
+            # coda intasata: sacrifico la telemetria (pesante) ma non i giri (leggeri e preziosi)
+            if obj.get("type") == "lap_telemetry":
+                return False
+        self.q.put(obj)
+        return True
+
+    def _run(self):
+        while True:
+            obj = self.q.get()
+            if obj is None:
+                return
+            try:
+                self.ws.send(json.dumps(obj))
+            except Exception as e:
+                self.error = e
+                return
+
+    def stop(self):
+        try:
+            self.q.put_nowait(None)
+        except Exception:
+            pass
+
+
+def drain(ws):
+    """Legge gli eventuali messaggi in arrivo senza bloccare il ciclo.
+    Usa select per sapere se c'è qualcosa da leggere, invece di affidarsi a un timeout minuscolo
+    (che, applicandosi anche all'invio, impediva la spedizione della telemetria)."""
+    try:
+        ready, _, _ = select.select([ws.sock], [], [], 0)
+        if not ready:
+            return
+        ws.sock.settimeout(0.2)          # solo per questa lettura
+        try:
+            ws.recv()
+        finally:
+            ws.sock.settimeout(SEND_TIMEOUT)
+    except websocket.WebSocketTimeoutException:
+        pass
+    except OSError:
+        pass
+
+
 def run():
     cfg = load_config()
     backend = cfg["agent"]["backend"].rstrip("/")
@@ -424,51 +496,59 @@ def run():
 
     backoff = 1
     while True:
+        sender = None
         try:
-            ws = websocket.create_connection(f"{backend}/ws/agent?device_key={device_key}", timeout=10)
-            ws.settimeout(0.005)
+            ws = websocket.create_connection(f"{backend}/ws/agent?device_key={device_key}", timeout=15)
+            # Timeout ampio: serve all'INVIO, perché la telemetria di un giro può superare 1 MB
+            # e su rete reale non entra tutta in una volta nel buffer di sistema.
+            # La lettura resta non bloccante grazie a select (vedi più sotto).
+            ws.settimeout(SEND_TIMEOUT)
+            sender = Sender(ws)
             backoff = 1
             print("Connesso al server.")
             # Dopo una riconnessione: riallineo sessione/stint e scarto il giro in corso (incompleto)
             if getattr(source, "session", None):
-                ws.send(json.dumps({"type": "session_start", **source.session}))
+                sender.send({"type": "session_start", **source.session})
                 if getattr(source, "stint", None):
-                    ws.send(json.dumps({"type": "stint_start", **source.stint}))
+                    sender.send({"type": "stint_start", **source.stint})
             if hasattr(source, "invalidate_lap"):
                 source.invalidate_lap()
             last_hb = time.time()
             last_recv = time.time()
             while True:
+                if sender.error:
+                    raise sender.error
                 for kind, data in source.poll():
                     if kind == "status":
                         print("iRacing:", "connesso" if data else "in attesa...")
                     elif kind == "session":
                         print(f"Sessione: {data['sessionType']} | {data['car']} @ {data['track']}")
-                        ws.send(json.dumps({"type": "session_start", **data}))
+                        sender.send({"type": "session_start", **data})
                     elif kind == "stint":
                         print(f"Stint: setup '{data['setupName']}'")
-                        ws.send(json.dumps({"type": "stint_start", **data}))
+                        sender.send({"type": "stint_start", **data})
                     elif kind == "telemetry":
                         n = len(data["samples"]["lapdist"])
-                        print(f"  telemetria giro inviata ({n} campioni)")
-                        ws.send(json.dumps({"type": "lap_telemetry", **data}))
+                        if sender.send({"type": "lap_telemetry", **data}):
+                            print(f"  telemetria giro in invio ({n} campioni)")
+                        else:
+                            print("  ATTENZIONE: connessione lenta, telemetria di questo giro non inviata")
                     else:
                         print(f"Giro {data['lap']}: {data['lastLapTime']:.3f}s")
-                        ws.send(json.dumps({"type": "lap", **data, "ts": time.time()}))
+                        sender.send({"type": "lap", **data, "ts": time.time()})
                 now = time.time()
                 if now - last_hb >= HEARTBEAT_S:
-                    ws.send(json.dumps({"type": "hb"}))
+                    sender.send({"type": "hb"})
                     last_hb = now
                 if now - last_recv >= 1.0:
                     last_recv = now
-                    try:
-                        ws.recv()
-                    except websocket.WebSocketTimeoutException:
-                        pass
+                    drain(ws)
         except KeyboardInterrupt:
+            if sender: sender.stop()
             return
         except Exception as e:
-            print(f"Server non raggiungibile ({e}), ritento tra {backoff}s...")
+            if sender: sender.stop()
+            print(f"Connessione persa ({e}), ritento tra {backoff}s...")
             time.sleep(backoff)
             backoff = min(backoff * 2, 30)
 
