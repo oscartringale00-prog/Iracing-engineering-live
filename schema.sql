@@ -201,3 +201,24 @@ ALTER TABLE laps ADD COLUMN IF NOT EXISTS temp_lf     DOUBLE PRECISION;
 ALTER TABLE laps ADD COLUMN IF NOT EXISTS temp_rf     DOUBLE PRECISION;
 ALTER TABLE laps ADD COLUMN IF NOT EXISTS temp_lr     DOUBLE PRECISION;
 ALTER TABLE laps ADD COLUMN IF NOT EXISTS temp_rr     DOUBLE PRECISION;
+
+-- ============ v26: canali sostitutivi (iRacing non espone le altezze di marcia né il GPS) ============
+ALTER TABLE lap_telemetry ADD COLUMN IF NOT EXISTS heave_f DOUBLE PRECISION[];
+ALTER TABLE lap_telemetry ADD COLUMN IF NOT EXISTS heave_r DOUBLE PRECISION[];
+ALTER TABLE lap_telemetry ADD COLUMN IF NOT EXISTS yawrate DOUBLE PRECISION[];
+ALTER TABLE lap_telemetry ADD COLUMN IF NOT EXISTS velx    DOUBLE PRECISION[];
+ALTER TABLE lap_telemetry ADD COLUMN IF NOT EXISTS vely    DOUBLE PRECISION[];
+ALTER TABLE lap_telemetry ADD COLUMN IF NOT EXISTS yaw     DOUBLE PRECISION[];
+
+-- ============ v27: canali a 360 Hz (solo sospensioni) con il proprio asse distanze ============
+ALTER TABLE lap_telemetry ADD COLUMN IF NOT EXISTS lapdist_hf     DOUBLE PRECISION[];
+ALTER TABLE lap_telemetry ADD COLUMN IF NOT EXISTS shockvel_lf_hf DOUBLE PRECISION[];
+ALTER TABLE lap_telemetry ADD COLUMN IF NOT EXISTS shockvel_rf_hf DOUBLE PRECISION[];
+ALTER TABLE lap_telemetry ADD COLUMN IF NOT EXISTS shockvel_lr_hf DOUBLE PRECISION[];
+ALTER TABLE lap_telemetry ADD COLUMN IF NOT EXISTS shockvel_rr_hf DOUBLE PRECISION[];
+ALTER TABLE lap_telemetry ADD COLUMN IF NOT EXISTS shock_lf_hf    DOUBLE PRECISION[];
+ALTER TABLE lap_telemetry ADD COLUMN IF NOT EXISTS shock_rf_hf    DOUBLE PRECISION[];
+ALTER TABLE lap_telemetry ADD COLUMN IF NOT EXISTS shock_lr_hf    DOUBLE PRECISION[];
+ALTER TABLE lap_telemetry ADD COLUMN IF NOT EXISTS shock_rr_hf    DOUBLE PRECISION[];
+ALTER TABLE lap_telemetry ADD COLUMN IF NOT EXISTS heave_f_hf     DOUBLE PRECISION[];
+ALTER TABLE lap_telemetry ADD COLUMN IF NOT EXISTS heave_r_hf     DOUBLE PRECISION[];

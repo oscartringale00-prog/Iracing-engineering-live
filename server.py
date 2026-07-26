@@ -211,9 +211,12 @@ async def ws_agent(ws: WebSocket, device_key: str):
                 elif t == "lap_telemetry" and session_id is not None:
                     s = msg.get("samples") or {}
                     ch = ["speed","throttle","brake","clutch","steer","gear","rpm","lapdist",
-                          "lataccel","lonaccel","vertaccel",
-                          "rh_lf","rh_rf","rh_lr","rh_rr","shock_lf","shock_rf","shock_lr","shock_rr",
-                          "lat","lon"]
+                          "lataccel","lonaccel","vertaccel","yawrate",
+                          "heave_f","heave_r","shock_lf","shock_rf","shock_lr","shock_rr",
+                          "velx","vely","yaw","lat","lon",
+                          "lapdist_hf","shockvel_lf_hf","shockvel_rf_hf","shockvel_lr_hf",
+                          "shockvel_rr_hf","shock_lf_hf","shock_rf_hf","shock_lr_hf",
+                          "shock_rr_hf","heave_f_hf","heave_r_hf"]
                     present = [k for k in ch if s.get(k) is not None]
                     cols = ["session_id", "lap_uid"] + present
                     ph = ",".join(f"${i+1}" for i in range(len(cols)))
@@ -762,7 +765,9 @@ async def lap_telemetry(lap_id: int, uid: str = Depends(uid_dep)):
         raise HTTPException(404)
     tel = await pool.fetchrow(
         "SELECT speed, throttle, brake, clutch, steer, gear, rpm, lapdist, lataccel, lonaccel, vertaccel, "
-        "rh_lf, rh_rf, rh_lr, rh_rr, shock_lf, shock_rf, shock_lr, shock_rr, lat, lon "
+        "yawrate, heave_f, heave_r, shock_lf, shock_rf, shock_lr, shock_rr, velx, vely, yaw, lat, lon, "
+        "lapdist_hf, shockvel_lf_hf, shockvel_rf_hf, shockvel_lr_hf, shockvel_rr_hf, "
+        "shock_lf_hf, shock_rf_hf, shock_lr_hf, shock_rr_hf, heave_f_hf, heave_r_hf "
         "FROM lap_telemetry WHERE session_id = $1 AND lap_uid = $2", meta["session_id"], meta["client_lap_uid"])
     if not tel:
         raise HTTPException(404, "Telemetria non disponibile per questo giro")

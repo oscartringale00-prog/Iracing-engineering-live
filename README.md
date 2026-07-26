@@ -362,3 +362,42 @@ Su GitHub: agent.py, server.py, index.html.
    utili a posizione e assetto. Serve a stabilire con certezza se le coordinate GPS esistono su
    quel PC e con quale nome, invece di tirare a indovinare.
 ⚠️ agent.py modificato -> ricostruire l'exe. Su GitHub: agent.py, index.html.
+
+## v26 — Il registro ha risolto tre questioni aperte
+Analisi dell'elenco completo (354 variabili) inviato dall'utente:
+1) FREQUENZA DIMEZZATA (era 30 Hz invece di 60). Causa: _wait_tick faceva time.sleep(1/60) MA
+   freeze_var_buffer_latest() attende GIÀ l'aggiornamento di iRacing: le due attese si sommavano
+   (16 ms + 16 ms = 33 ms) e si perdeva un aggiornamento su due. Rimossa l'attesa superflua
+   (resta solo se l'SDK non espone l'evento di sincronizzazione). Misurato: da 30,0 a 60,5 al secondo.
+   Nota: in questa versione di pyirsdk wait_for_data NON esiste, quindi si cadeva sempre nel ramo
+   con la pausa.
+2) COORDINATE GPS: NON esistono su questo sistema (né Lat né Lon fra le 354 variabili). Esistono
+   però VelocityX, VelocityY e YawNorth: la traiettoria si ricava ora integrando la velocità
+   ruotata secondo la direzione MISURATA rispetto al nord, che non accumula errore di rotazione.
+   Verificato su un ovale noto 900x400 m: errore 0,0% e 0,1%.
+3) ALTEZZE DI MARCIA: non esistono (nessun *rideHeight). Sostituite con HFshockDefl/HRshockDefl
+   (corse degli ammortizzatori centrali), che descrivono l'abbassamento della piattaforma.
+Inoltre: il contesto di sessione (auto/pista/tipo) viene riletto al massimo una volta al secondo
+invece che a ogni tick, e i nomi delle variabili si risolvono una volta sola.
+⚠️ agent.py modificato -> ricostruire l'exe. Su GitHub: agent.py, server.py, schema.sql, index.html.
+
+## v28 — Alta frequenza 360 Hz sulle sospensioni
+LIMITE ACCERTATO: pedali, sterzo, velocità, marcia, RPM e posizione sul giro esistono SOLO a
+60 Hz (nessuna variante _ST). Con la correzione precedente siamo già al massimo possibile.
+DISPONIBILE a 360 Hz: 22 variabili con suffisso _ST (pacchetti di 6 sotto-campioni per fotogramma).
+SCELTA: raccogliamo a 360 Hz SOLO le sospensioni (4 velocità ammortizzatore, 4 corse, 2 heave).
+Accelerazioni e rotazione restano a 60 Hz: includerle avrebbe aggiunto il 40% di dati senza
+informazione utile, perché per l'analisi di guida 60 Hz sono abbondanti. Sulle sospensioni invece
+le oscillazioni stanno fra 3 e 15 Hz e a 60 Hz se ne colgono 4-5 campioni per ciclo: troppo pochi,
+soprattutto per l'istogramma delle velocità ammortizzatore.
+ARCHITETTURA: i canali a 360 Hz hanno un PROPRIO asse delle distanze (lapdist_hf), perché
+LapDistPct esiste solo a 60 Hz e i 6 sotto-campioni vengono distribuiti per interpolazione.
+Nel frontend ogni serie porta con sé il proprio asse: disegno, cursore e riquadro dei valori
+funzionano su entrambe le frequenze.
+INTERRUTTORE: 'alta_frequenza = si/no' in config.ini (predefinito: acceso), segnalato all'avvio.
+COSTO MISURATO (Daytona, giro di 45,3 s): 279 KB spento -> 1673 KB acceso, cioè 6 volte.
+Su una pista lunga come Monza si arriva a ~4 MB per giro. Tetto di sicurezza dedicato a 30000
+campioni con diradamento uniforme.
+VERIFICHE: 360,1 Hz misurati, rapporto 6,0x, 10/10 canali presenti, assi allineati e coerenti,
+comportamento identico a prima con l'interruttore spento.
+⚠️ agent.py modificato -> ricostruire l'exe. Su GitHub: agent.py, server.py, schema.sql, index.html.

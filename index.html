@@ -1246,8 +1246,13 @@ const TEL_CATALOG = [
   ["lataccel","G laterale",                [["lataccel","#e10600"]],                      v=>v/9.81,       v=>v.toFixed(2)+" G",      "centro"],
   ["lonaccel","G longitudinale",           [["lonaccel","#35d07f"]],                      v=>v/9.81,       v=>v.toFixed(2)+" G",      "centro"],
   ["vertaccel","G verticale",              [["vertaccel","#8ab4ff"]],                     v=>v/9.81,       v=>v.toFixed(2)+" G",      "centro"],
-  ["rh_front","Altezze anteriori (mm)",    [["rh_lf","#e10600","LF"],["rh_rf","#8ab4ff","RF"]], v=>v,      v=>v.toFixed(1)+" mm",     "zero"],
-  ["rh_rear", "Altezze posteriori (mm)",   [["rh_lr","#e10600","LR"],["rh_rr","#8ab4ff","RR"]], v=>v,      v=>v.toFixed(1)+" mm",     "zero"],
+  ["shockvel_hf","Velocità ammortizzatori (m/s) · 360 Hz",
+     [["shockvel_lf_hf","#e10600","AS"],["shockvel_rf_hf","#8ab4ff","AD"]], v=>v, v=>v.toFixed(3)+" m/s", "centro"],
+  ["shockvel_r_hf","Vel. ammort. post. (m/s) · 360 Hz",
+     [["shockvel_lr_hf","#e10600","PS"],["shockvel_rr_hf","#8ab4ff","PD"]], v=>v, v=>v.toFixed(3)+" m/s", "centro"],
+  ["shock_hf", "Corse ammort. ant. (m) · 360 Hz",
+     [["shock_lf_hf","#e10600","AS"],["shock_rf_hf","#8ab4ff","AD"]], v=>v, v=>v.toFixed(4)+" m", "zero"],
+  ["heave",   "Heave ant./post. (m)",      [["heave_f","#e10600","ANT"],["heave_r","#8ab4ff","POST"]], v=>v, v=>v.toFixed(4)+" m",  "zero"],
   ["sh_front","Ammortizzatori ant. (m)",   [["shock_lf","#e10600","LF"],["shock_rf","#8ab4ff","RF"]], v=>v, v=>v.toFixed(4)+" m",     "zero"],
   ["sh_rear", "Ammortizzatori post. (m)",  [["shock_lr","#e10600","LR"],["shock_rr","#8ab4ff","RR"]], v=>v, v=>v.toFixed(4)+" m",     "zero"],
 ];
@@ -1330,35 +1335,57 @@ async function viewLapTelemetry(lapId){
   // In curva l'accelerazione laterale è legata al raggio: integrandola lungo il giro si
   // ottiene la traiettoria. La lunghezza della pista si stima da velocità media × tempo sul giro.
   function ricostruisciTracciato(l){
-    const sp = l.ch.speed, la = l.ch.lataccel, di = l.ch.lapdist, yr = l.ch.yawrate;
-    if (!sp || !di || !l.time_s) return null;
-    const usaYaw = yr && yr.length === sp.length && yr.some(v => v != null && Math.abs(v) > 1e-4);
-    if (!usaYaw && !la) return null;
-    const n = sp.length;
-    let somma = 0, validi = 0;
-    for (let i=0;i<n;i++) if (sp[i] != null){ somma += sp[i]; validi++; }
-    if (!validi) return null;
-    const L = (somma/validi) * l.time_s;
+    // iRacing non fornisce le coordinate GPS (verificato: non esistono fra le 354 variabili).
+    // Fornisce però velocità e direzione, e da quelle la traiettoria si ricava per integrazione.
+    // Tre metodi in ordine di precisione: il primo usa la direzione MISURATA rispetto al nord,
+    // quindi non accumula errore di rotazione.
+    const ch = l.ch, n = (ch.lapdist || []).length;
+    if (!n || !l.time_s) return null;
+    const dt = l.time_s / n;
     const X = [], Y = [];
-    let psi = 0, x = 0, y = 0;
-    for (let i=0;i<n;i++){
-      const v = sp[i], a = la[i];
-      let dd = i === 0 ? (di[1]-di[0]) : (di[i]-di[i-1]);
-      if (dd < -0.5) dd += 1;
-      const ds = dd * L;
-      if (v != null && v > 1 && isFinite(ds) && ds > 0){
-        // con YawRate uso la rotazione misurata (dt = spazio/velocità), altrimenti la ricavo
-        // dall'accelerazione laterale: in curva a_lat = v x (rotazione al secondo)
-        psi += usaYaw && yr[i] != null ? yr[i] * (ds / v) : ((a != null ? a : 0) * ds) / (v * v);
-        x += Math.cos(psi) * ds;
-        y += Math.sin(psi) * ds;
+    let x = 0, y = 0;
+
+    if (ch.velx && ch.vely && ch.yaw && ch.yaw.some(v => v != null)){
+      // METODO MIGLIORE: velocità dell'auto ruotata secondo la direzione assoluta
+      for (let i=0;i<n;i++){
+        const vx = ch.velx[i], vy = ch.vely[i], a = ch.yaw[i];
+        if (vx != null && vy != null && a != null){
+          x += (vx * Math.cos(a) - vy * Math.sin(a)) * dt;
+          y += (vx * Math.sin(a) + vy * Math.cos(a)) * dt;
+        }
+        X.push(x); Y.push(y);
       }
-      X.push(x); Y.push(y);
+    } else {
+      // RIPIEGO: direzione ricavata dalla rotazione o dall'accelerazione laterale
+      const sp = ch.speed, la = ch.lataccel, yr = ch.yawrate;
+      if (!sp) return null;
+      const usaYaw = yr && yr.some(v => v != null && Math.abs(v) > 1e-4);
+      if (!usaYaw && !la) return null;
+      let psi = 0;
+      for (let i=0;i<n;i++){
+        const v = sp[i];
+        if (v != null && v > 1){
+          psi += usaYaw && yr[i] != null ? yr[i] * dt : ((la[i] != null ? la[i] : 0) / v) * dt;
+          x += Math.cos(psi) * v * dt;
+          y += Math.sin(psi) * v * dt;
+        }
+        X.push(x); Y.push(y);
+      }
     }
-    // il giro è chiuso: distribuisco l'errore di chiusura lungo il percorso
+    // il giro è chiuso: distribuisco lungo il percorso il piccolo errore di chiusura
     const ex = X[n-1]-X[0], ey = Y[n-1]-Y[0];
     for (let i=0;i<n;i++){ const f = i/(n-1); X[i] -= ex*f; Y[i] -= ey*f; }
+    if (Math.max(...X)-Math.min(...X) < 1e-6) return null;
     return {lat: Y, lon: X, ricostruito: true};
+  }
+
+  // Cerca in un asse qualsiasi (60 Hz o 360 Hz) il campione più vicino alla frazione di giro
+  function idxInDist(arr, rel){
+    if (!arr || !arr.length || rel < 0) return -1;
+    let lo = 0, hi = arr.length - 1;
+    while (lo < hi){ const mid = (lo+hi)>>1; if (arr[mid] < rel) lo = mid+1; else hi = mid; }
+    if (lo > 0 && Math.abs(arr[lo-1]-rel) < Math.abs(arr[lo]-rel)) return lo-1;
+    return lo;
   }
 
   // Per un giro e una posizione 0→1, trova l'indice del campione con lapdist più vicina
@@ -1574,9 +1601,19 @@ async function viewLapTelemetry(lapId){
       const catSeries = g[2];
       const perLap = laps.map(l => {
         const useSeries = multi ? catSeries.slice(0,1) : catSeries;
+        // Ogni serie porta con sé l'asse a cui appartiene: i canali a 360 Hz hanno un asse
+        // proprio (lapdist_hf), più fitto di quello a 60 Hz.
         const seriesVals = useSeries
-          .filter(s => Array.isArray(l.ch[s[0]]) && l.ch[s[0]].length === l.n)
-          .map(s => ({ color: multi ? l.color : s[1], name: multi ? "" : (s[2]||""), vals: l.ch[s[0]].map(g[3]) }));
+          .filter(s => {
+            const arr = l.ch[s[0]];
+            if (!Array.isArray(arr) || !arr.length) return false;
+            const hf = s[0].endsWith("_hf");
+            const asse = hf ? l.ch.lapdist_hf : l.ch.lapdist;
+            return Array.isArray(asse) && asse.length === arr.length;
+          })
+          .map(s => ({ color: multi ? l.color : s[1], name: multi ? "" : (s[2]||""),
+                       vals: l.ch[s[0]].map(g[3]),
+                       dist: s[0].endsWith("_hf") ? l.ch.lapdist_hf : l.ch.lapdist }));
         return { lap:l, seriesVals };
       }).filter(x => x.seriesVals.length);
       if (!perLap.length){ cv.hidden = true; na.hidden = false; return null; }
@@ -1613,8 +1650,8 @@ async function viewLapTelemetry(lapId){
     const span = (zx1 - zx0) || 1;
     const mrg = span*0.02;
     g.perLap.forEach(p => {
-      const dist = p.lap.ch.lapdist;
       p.seriesVals.forEach(s => {
+        const dist = s.dist;
         ctx.strokeStyle = s.color; ctx.lineWidth = p.lap.main ? 1.6 : 1.2; ctx.beginPath();
         let started = false;
         for (let i=0;i<s.vals.length;i++){
@@ -1645,8 +1682,8 @@ async function viewLapTelemetry(lapId){
     // una riga per serie visibile (per multi: una per giro)
     const rows = [];
     g.perLap.forEach(p => {
-      const i = idxAt(p.lap, rel);
       p.seriesVals.forEach(s => {
+        const i = idxInDist(s.dist, rel);
         const v = i>=0 ? s.vals[i] : null;
         rows.push({ color: s.color, name: s.name, txt: (v==null||isNaN(v))?"–":g.fmt(v) });
       });

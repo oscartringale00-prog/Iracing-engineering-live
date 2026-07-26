@@ -45,6 +45,30 @@ STRATEGY_VARS = [
     ("LRtempCM", "temp_lr", 1), ("RRtempCM", "temp_rr", 1),
 ]
 
+
+# ====== CANALI AD ALTA FREQUENZA (360 Hz) ======
+# iRacing pubblica queste variabili come pacchetti di 6 campioni per ogni fotogramma a 60 Hz.
+# Le raccogliamo SOLO dove servono davvero: i movimenti delle sospensioni oscillano fra 3 e 15 Hz
+# e a 60 Hz se ne colgono appena 4-5 campioni per oscillazione. Per pedali, sterzo e velocità
+# 60 Hz sono abbondanti (e iRacing non offre comunque di meglio).
+HF_CHANNELS = [
+    # SOLO sospensioni: è qui che 60 Hz non bastano (oscillazioni fra 3 e 15 Hz).
+    # Accelerazioni e rotazione restano a 60 Hz, dove sono già più che sufficienti:
+    # includerle avrebbe fatto crescere il messaggio del 40% senza aggiungere informazione utile.
+    ("LFshockVel_ST", "shockvel_lf_hf", 3),      # velocità ammortizzatore: serve all'istogramma
+    ("RFshockVel_ST", "shockvel_rf_hf", 3),
+    ("LRshockVel_ST", "shockvel_lr_hf", 3),
+    ("RRshockVel_ST", "shockvel_rr_hf", 3),
+    ("LFshockDefl_ST", "shock_lf_hf", 4),        # corsa: cordoli e movimento della piattaforma
+    ("RFshockDefl_ST", "shock_rf_hf", 4),
+    ("LRshockDefl_ST", "shock_lr_hf", 4),
+    ("RRshockDefl_ST", "shock_rr_hf", 4),
+    ("HFshockDefl_ST", "heave_f_hf", 4),
+    ("HRshockDefl_ST", "heave_r_hf", 4),
+]
+HF_SUB = 6                  # sotto-campioni per fotogramma: 60 x 6 = 360 Hz
+MAX_SAMPLES_HF = 30000      # tetto dedicato (~83 s a 360 Hz), oltre si dirada
+
 # Canali telemetria ad alta frequenza: (nome SDK, chiave, decimali)
 TELEMETRY_CHANNELS = [
     # (nome SDK, chiave, decimali). I decimali sono il minimo che non toglie informazione utile:
@@ -61,16 +85,19 @@ TELEMETRY_CHANNELS = [
     (("LongAccel", "LonAccel"), "lonaccel", 2),
     (("YawRate", "YawRateST"), "yawrate", 4),      # per ricostruire la forma del tracciato
     ("VertAccel", "vertaccel", 2),
-    (("LFrideHeight", "LFRideHeight", "CFrideHeight"), "rh_lf", 1),   # non tutte le auto lo espongono
-    (("RFrideHeight", "RFRideHeight"), "rh_rf", 1),
-    (("LRrideHeight", "LRRideHeight"), "rh_lr", 1),
-    (("RRrideHeight", "RRRideHeight"), "rh_rr", 1),
+    # iRacing non espone le altezze di marcia: al loro posto le corse degli ammortizzatori
+    # centrali (heave), che descrivono l'abbassamento della piattaforma aerodinamica.
+    ("HFshockDefl", "heave_f", 4),
+    ("HRshockDefl", "heave_r", 4),
     ("LFshockDefl", "shock_lf", 4),         # invariato: valori piccoli, la precisione conta
     ("RFshockDefl", "shock_rf", 4),
     ("LRshockDefl", "shock_lr", 4),
     ("RRshockDefl", "shock_rr", 4),
-    ("Lat", "lat", 6),                      # 6 decimali = ~11 cm, più che sufficienti per la mappa
-    ("Lon", "lon", 6),
+    # Coordinate GPS: iRacing NON le espone (verificato sull'elenco completo delle 354 variabili).
+    # In compenso fornisce velocità e direzione, da cui la traiettoria si ricava per integrazione.
+    ("VelocityX", "velx", 3),
+    ("VelocityY", "vely", 3),
+    ("YawNorth", "yaw", 4),
 ]
 
 
@@ -145,14 +172,26 @@ class IracingSource:
         self.buf_lap_num = None      # numero di giro a cui appartiene il buffer
         self.fuel_start = None       # carburante a inizio giro
         self.pending_lap = None      # giro concluso, in attesa del suo tempo
+        self._risolti = {}           # nome effettivo di ogni variabile, risolto una volta sola
+        self._ctx = None             # contesto sessione, riletto al massimo una volta al secondo
+        self._ctx_t = 0.0
+        self.hf_on = HF_ATTIVA
+        self.buf_hf = None
         self.last_live = 0.0         # ultimo invio della fotografia di gara
         self._last_strat = {}
         self.fuel_last = None        # ultimo valore letto
         self.diag_done = False       # diagnosi canali gia' stampata?
         self.prev_pct = None         # posizione sul giro al tick precedente
 
+    def _reset_buffer_hf(self):
+        self.buf_hf = {"lapdist_hf": []}
+        for _, k, _ in HF_CHANNELS:
+            self.buf_hf[k] = []
+
     def _reset_buffer(self):
         self.buf = {key: [] for _, key, _ in TELEMETRY_CHANNELS}
+        if self.hf_on:
+            self._reset_buffer_hf()
         self.lap_uid = str(uuid.uuid4())
         self.buf_valid = True
 
@@ -161,6 +200,16 @@ class IracingSource:
         self.buf_valid = False
 
     def _read_context(self):
+        # Rileggerlo a ogni tick è inutile e costoso (comporta il riesame delle informazioni di
+        # sessione): auto, pista e tipo di sessione cambiano al massimo una volta ogni tanto.
+        ora = time.time()
+        if self._ctx and ora - self._ctx_t < 1.0:
+            return self._ctx
+        self._ctx_t = ora
+        self._ctx = self._read_context_vero()
+        return self._ctx
+
+    def _read_context_vero(self):
         try:
             di = self.ir["DriverInfo"]
             car = di["Drivers"][di["DriverCarIdx"]]["CarScreenName"]
@@ -210,7 +259,12 @@ class IracingSource:
         return {"uid": str(uuid.uuid4()), "setupName": name or "Setup sconosciuto", "setup": setup}
 
     def _wait_tick(self):
-        # Sincronizzazione al tick nativo dell'SDK dove disponibile, altrimenti timer 60Hz
+        """Non bisogna attendere qui: freeze_var_buffer_latest() si mette GIÀ in attesa del
+        prossimo aggiornamento di iRacing. La pausa aggiuntiva faceva perdere sistematicamente
+        un aggiornamento su due (sleep 16 ms + attesa del prossimo evento a 16 ms = 33 ms),
+        dimezzando la frequenza da 60 a 30 campioni al secondo.
+        La pausa resta solo se l'SDK non espone l'evento di sincronizzazione, altrimenti il
+        ciclo girerebbe a vuoto consumando la CPU."""
         wfd = getattr(self.ir, "wait_for_data", None)
         if callable(wfd):
             try:
@@ -218,7 +272,8 @@ class IracingSource:
                 return
             except Exception:
                 pass
-        time.sleep(TICK_S)
+        if getattr(self.ir, "_data_valid_event", None) is None:
+            time.sleep(TICK_S)
 
     def poll(self):
         events = []
@@ -241,6 +296,8 @@ class IracingSource:
             self.lap_invalid = False
             self.buf_lap_num = None
             self.pending_lap = None
+            self._risolti = {}
+            self._ctx = None
             self.diag_done = False
             self.prev_pct = None
         if was != self.connected:
@@ -334,6 +391,7 @@ class IracingSource:
                 self.pending_lap = {
                     "num": self.buf_lap_num, "uid": self.lap_uid,
                     "buf": self.buf if self.buf_valid else None,
+                    "buf_hf": self.buf_hf if (self.buf_valid and self.hf_on) else None,
                     "fuel_start": self.fuel_start, "fuel_last": self.fuel_last,
                     "strat": dict(strat), "t": time.time(),
                 }
@@ -364,8 +422,15 @@ class IracingSource:
                 if p["buf"] and len(p["buf"]["lapdist"]) > 10:
                     n_camp = len(p["buf"]["lapdist"])
                     p["hz"] = round(n_camp / float(last_time), 1) if last_time else None
-                    events.append(("telemetry", {"lapUid": p["uid"], "samples": _riduci(p["buf"]),
-                                                 "hz": p["hz"]}))
+                    campioni = _riduci(p["buf"])
+                    n_hf = 0
+                    if p.get("buf_hf") and len(p["buf_hf"]["lapdist_hf"]) > 10:
+                        hf = _riduci(p["buf_hf"], MAX_SAMPLES_HF, "lapdist_hf")
+                        n_hf = len(hf["lapdist_hf"])
+                        campioni.update(hf)
+                    events.append(("telemetry", {"lapUid": p["uid"], "samples": campioni,
+                                                 "hz": p["hz"], "n_hf": n_hf,
+                                                 "hz_hf": round(n_hf / float(last_time), 1) if (n_hf and last_time) else None}))
                 if self.pending_stint:
                     self.stint = self.pending_stint
                     self.pending_stint = None
@@ -380,9 +445,44 @@ class IracingSource:
         if self.buf is not None:
             for _, k, _ in TELEMETRY_CHANNELS:
                 self.buf[k].append(sample[k])
+            if self.hf_on and self.buf_hf is not None:
+                self._append_hf(lap_pct)
         self.prev_pct = lap_pct
         return events
 
+
+
+    def _append_hf(self, lap_pct):
+        """Aggiunge i 6 sotto-campioni di ogni variabile _ST, con il proprio asse delle distanze.
+        LapDistPct esiste solo a 60 Hz: i 6 punti intermedi vengono distribuiti per interpolazione
+        fra il valore precedente e quello attuale, gestendo il passaggio sul traguardo."""
+        prev = self.prev_pct if self.prev_pct is not None else lap_pct
+        cur = lap_pct
+        if prev is None or cur is None:
+            return
+        salto = cur - prev
+        if salto < -0.5:                     # passaggio sul traguardo: 0.99 -> 0.01
+            salto += 1.0
+        letti = {}
+        for nome, key, dec in HF_CHANNELS:
+            v = self._first_var(nome)
+            if v is None:
+                continue
+            try:
+                seq = list(v)
+            except Exception:
+                continue
+            if len(seq) < HF_SUB:
+                continue
+            letti[key] = [round(float(x), dec) for x in seq[:HF_SUB]]
+        if not letti:
+            return
+        for j in range(HF_SUB):
+            d = (prev + salto * (j + 1) / HF_SUB) % 1.0
+            self.buf_hf["lapdist_hf"].append(round(d, 6))
+            for _, key, _ in HF_CHANNELS:
+                if key in self.buf_hf:
+                    self.buf_hf[key].append(letti.get(key, [None] * HF_SUB)[j] if key in letti else None)
 
     def _read_live(self):
         """Fotografia della gara: posizione di tutte le auto, classifica, stato box.
@@ -413,6 +513,7 @@ class IracingSource:
                 "lt": round(float(last[i]), 3) if i < len(last) and last[i] and last[i] > 0 else None,
                 "bt": round(float(best[i]), 3) if i < len(best) and best[i] and best[i] > 0 else None,
             })
+        ctx = self._read_context()
         me = self._safe_var("PlayerCarIdx")
         di = self._safe_var("DriverInfo") or {}
         piloti = [{"i": d.get("CarIdx"), "n": d.get("UserName"), "num": d.get("CarNumber"),
@@ -424,9 +525,9 @@ class IracingSource:
             "cars": cars,
             "piloti": piloti,
             "sessione": {
-                "tipo": self._read_context()[3],
-                "pista": self._read_context()[1],
-                "auto": self._read_context()[0],
+                "tipo": ctx[3],
+                "pista": ctx[1],
+                "auto": ctx[0],
                 "tempoRimasto": self._safe_var("SessionTimeRemain"),
                 "giriRimasti": self._safe_var("SessionLapsRemain"),
                 "bandiera": self._safe_var("SessionFlags"),
@@ -462,14 +563,21 @@ class IracingSource:
             log("Impossibile elencare le variabili", e)
 
     def _first_var(self, nomi):
-        """iRacing chiama alcune variabili in modi diversi a seconda della versione e dell'auto:
-        provo i nomi alternativi e uso il primo disponibile."""
-        if isinstance(nomi, str):
-            nomi = (nomi,)
-        for n in nomi:
+        """Risolve il nome UNA VOLTA SOLA e poi lo riusa.
+        Prima si ritentavano a ogni tick anche i nomi inesistenti: in Python sollevare e
+        catturare eccezioni costa, e con una decina di variabili assenti il ciclo scendeva
+        da 60 a 30 letture al secondo."""
+        chiave = nomi if isinstance(nomi, str) else tuple(nomi)
+        if chiave in self._risolti:
+            nome = self._risolti[chiave]
+            return self._safe_var(nome) if nome else None
+        candidati = (nomi,) if isinstance(nomi, str) else nomi
+        for n in candidati:
             v = self._safe_var(n)
             if v is not None:
+                self._risolti[chiave] = n
                 return v
+        self._risolti[chiave] = None      # non esiste: non ci riprovo più
         return None
 
     def _safe_var(self, name):
@@ -695,20 +803,23 @@ def log(msg, errore=None):
 MAX_SAMPLES = 9000         # tetto per giro (~1,4 MB): oltre, si riducono in modo uniforme
 LAP_TIME_WAIT = 5.0        # attesa massima perché iRacing pubblichi il tempo del giro
 LIVE_EVERY_S = 1.0         # fotografia della gara: una volta al secondo
+HF_ATTIVA = True           # alta frequenza (360 Hz) sui canali di sospensioni e dinamica
 SEND_TIMEOUT = 45          # tempo concesso all'invio: la telemetria di un giro può superare 1 MB
 QUEUE_SOFT = 8             # oltre questa attesa si smette di accodare telemetria (pesante)
 QUEUE_HARD = 40            # tetto assoluto: oltre, si scarta tutto per non far crescere la memoria
 
 
-def _riduci(buf):
+def _riduci(buf, tetto=None, asse="lapdist"):
     """Se il giro ha troppi campioni li dirada in modo uniforme lungo tutto il giro.
-    Conserva il primo e l'ultimo campione e mantiene tutti i canali della stessa lunghezza,
-    così la forma delle curve e la copertura del giro restano fedeli."""
-    n = len(buf["lapdist"])
-    if n <= MAX_SAMPLES:
+    Conserva il primo e l'ultimo campione e mantiene allineati fra loro tutti i canali dello
+    stesso asse, così la forma delle curve e la copertura del giro restano fedeli."""
+    tetto = tetto or MAX_SAMPLES
+    MAX_SAMPLES_LOC = tetto
+    n = len(buf[asse])
+    if n <= tetto:
         return buf
-    passo = n / MAX_SAMPLES
-    idx = [int(i * passo) for i in range(MAX_SAMPLES)]
+    passo = n / MAX_SAMPLES_LOC
+    idx = [int(i * passo) for i in range(MAX_SAMPLES_LOC)]
     if idx[-1] != n - 1:
         idx[-1] = n - 1
     print(f"  giro molto lungo ({n} campioni): ridotti a {len(idx)} per non appesantire l'invio")
@@ -804,8 +915,17 @@ def run():
         print("Registro attività non disponibile (cartella non scrivibile): proseguo comunque.")
     cfg = load_config()
     backend = cfg["agent"]["backend"].rstrip("/")
+    global HF_ATTIVA
+    try:
+        val = cfg["agent"].get("alta_frequenza", "si").strip().lower()
+        HF_ATTIVA = val not in ("no", "0", "false", "off")
+    except Exception:
+        pass
     http_url = backend.replace("wss://", "https://").replace("ws://", "http://")
     print(f"iRacing Telemetry Agent {'(DEMO)' if DEMO else ''}")
+    log("Alta frequenza (360 Hz su sospensioni e dinamica): "
+        + ("ATTIVA" if HF_ATTIVA else "spenta")
+        + " — si cambia con 'alta_frequenza = si/no' in config.ini")
 
     device_key = ensure_device_key(cfg, http_url)
     webbrowser.open(http_url)
