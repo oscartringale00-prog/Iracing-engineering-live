@@ -216,21 +216,66 @@ const DEMO = (() => {
       if (!s || !visible(owner)) throw new Error("404");
       return { session:{session_type:s.session_type, started_at:s.started_at, car:"Mazda MX-5 Cup",
                         track:"Autodromo Nazionale Monza", pilot: owner.id==="me"?null:owner.name,
+                        car_id:1, track_id:1, owner: owner.id==="me"?null:owner.id,
                         air_temp:s.air_temp, track_temp:s.track_temp, humidity:s.humidity,
                         wind_vel:s.wind_vel, wind_dir:s.wind_dir, track_usage:s.track_usage},
         stints: s.stints.map(st=>({id:st.id, setup_name:st.setup_name, setup:st.setup,
-          laps: st.laps.map(l=>({id:l.id, lap:l.lap, time_s:l.time_s, air_temp:s.air_temp,
-            track_temp:s.track_temp, humidity:s.humidity, wind_vel:s.wind_vel, wind_dir:s.wind_dir,
+          laps: st.laps.map(l=>({id:l.id, lap:l.lap, time_s:l.time_s, air_temp:s.air_temp+(Math.random()-0.5),
+            track_temp:s.track_temp+(Math.random()-0.5), humidity:s.humidity, wind_vel:s.wind_vel, wind_dir:s.wind_dir,
+            fuel: +(45 - l.lap*2.75).toFixed(2), fuel_used: +(2.75 + (Math.random()-0.5)*0.2).toFixed(2),
+            wear_lf: +(1 - l.lap*0.012).toFixed(3), wear_rf: +(1 - l.lap*0.011).toFixed(3),
+            wear_lr: +(1 - l.lap*0.010).toFixed(3), wear_rr: +(1 - l.lap*0.009).toFixed(3),
             has_telemetry:true}))}))};
     }
     if ((m = p.match(/^laps\/(\d+)\/telemetry$/))){
       const e = lapIndex[m[1]];
       if (!e || !visible(e.pilot)) throw new Error("404");
       return { lap:{lap:e.lap.lap, time_s:e.lap.time_s, car:"Mazda MX-5 Cup",
-                    track:"Autodromo Nazionale Monza", track_id:1,
-                    pilot: e.pilot.id==="me"?null:e.pilot.name},
+                    track:"Autodromo Nazionale Monza", track_id:1, car_id:1,
+                    session_id: e.session.id,
+                    pilot: e.pilot.id==="me"?null:e.pilot.name,
+                    owner: e.pilot.id==="me"?null:e.pilot.id},
                channels: e.tel };
     }
+    // ----- Pitwall dal vivo (simulato nel browser) -----
+    if (p === "live/pilots")
+      return [{id:"me", name:"I miei giri", is_me:true, sessione:"Race"},
+              {id:"p2", name:"Marco Rossi", is_me:false, sessione:"Practice"}];
+    if (p.startsWith("track-outline")){
+      const tel = telById[101];
+      const pts = [];
+      for (let i=0;i<tel.lapdist.length;i+=4)
+        pts.push({d: tel.lapdist[i], lat: tel.lat[i], lon: tel.lon[i]});
+      return {disponibile:true, punti:pts};
+    }
+    if (p.startsWith("live")){
+      const t = Date.now()/1000;
+      const cars = [], piloti = [], soste = {};
+      for (let i=0;i<12;i++){
+        const vel = 1/108 * (1 + (i%5)*0.004);
+        const d = ((t*vel) + i*0.083) % 1;
+        cars.push({i, p:i+1, l: 8 + (i%3), d:+d.toFixed(4),
+                   pit: (i===4 && Math.floor(t)%40 < 6) ? 1 : 0,
+                   lt: +(108 + (i%5)*0.4).toFixed(3), bt: +(107.2 + (i%5)*0.35).toFixed(3)});
+        piloti.push({i, n:`Pilota ${i+1}`, num:String(10+i), auto:"MX-5"});
+        if (i%3===0) soste[String(i)] = [4];
+      }
+      return {attivo:true, eta:0.4, soste, ts:t, me:0, cars, piloti,
+              sessione:{tipo:"Race", pista:"Autodromo Nazionale Monza", auto:"Mazda MX-5 Cup",
+                        tempoRimasto:1800, giriRimasti:16, airTemp:24.5, trackTemp:37.0},
+              mia:{fuel:31.4, wear_lf:0.92, wear_rf:0.93, wear_lr:0.95, wear_rr:0.96,
+                   temp_lf:83, temp_rf:85, temp_lr:80, temp_rr:82}};
+    }
+
+    // ----- parametri di strategia (finti ma coerenti) -----
+    if (p.startsWith("strategy/params"))
+      return { laps_total: 35, sessions: 3,
+               base_time: 99.96, fuel_per_lap: 2.8, deg: 0.039, k_fuel: 0.0355, pit_loss: 32.4,
+               fonte: { fuel_per_lap: "misurato su 35 giri",
+                        deg: "misurato su 3 stint (35 giri)",
+                        k_fuel: "misurato insieme al degrado",
+                        pit_loss: "misurato su 4 soste" } };
+
     // ----- confronto -----
     if (p.match(/^tracks\/\d+\/pilots$/))
       return Object.values(pilots).filter(visible).map(x=>({

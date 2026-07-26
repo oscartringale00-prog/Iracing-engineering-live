@@ -114,6 +114,45 @@ tr.clk:hover td{background:rgba(225,6,0,.12)}
 .telglabel{position:absolute;top:4px;left:10px;font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
 .telg canvas{display:block}
 .telhint{margin-top:12px;font-size:12px;color:var(--dim)}
+.pwbar{display:flex;justify-content:flex-end;margin-bottom:10px}
+.pwbtn{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-top:2px solid var(--red);color:var(--ink);padding:8px 16px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;text-decoration:none}
+.pwbtn:hover{border-color:var(--red);color:var(--red)}
+.pwsel{display:flex;gap:10px;flex-wrap:wrap;padding-top:12px}
+.pwsel select{flex:1;min-width:180px}
+.pwgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;padding-top:12px}
+.pwgrid label{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--dim);letter-spacing:.06em;text-transform:uppercase}
+.pwgrid input,.pwgrid select{font-family:'Chivo Mono',monospace;font-weight:700}
+.pwrow2{display:flex;gap:6px}
+.pwsrc{font-size:10px;color:var(--dim);text-transform:none;letter-spacing:0;font-style:italic}
+.pwtab{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}
+.pwtab th{text-align:left;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);padding:6px 8px;border-bottom:1px solid var(--line)}
+.pwtab td{padding:8px;border-bottom:1px solid #1c1c20}
+.pwnum{font-family:'Chivo Mono',monospace}
+.pwbest{background:rgba(225,6,0,.12)}
+.pwbest td{font-weight:700}
+.pwno td{color:var(--dim);font-style:italic}
+.pwnote{margin-top:12px;font-size:13px;border-left:3px solid var(--red);padding-left:12px}
+.lvwrap{display:grid;grid-template-columns:1fr;gap:12px}
+@media(min-width:820px){.lvwrap{grid-template-columns:1fr 300px}}
+#lvmap{display:block;width:100%;margin-top:10px}
+.lvdot{color:var(--red);font-size:10px;margin-left:10px;text-transform:none;letter-spacing:0}
+.lvbar{position:relative;height:54px;margin-top:12px;background:#0e0e10;border:1px solid var(--line);border-left:3px solid #fff}
+.lvcar{position:absolute;top:50%;transform:translate(-50%,-50%);background:#c9c9d1;color:#0b0b0c;font-family:'Chivo Mono',monospace;font-size:10px;font-weight:700;padding:2px 4px;border-radius:2px}
+.lvcar.io{background:var(--red);color:#fff;z-index:3}
+.lvcar.box{background:#f2b63d}
+.lvme{display:flex;flex-direction:column;gap:8px;padding-top:12px}
+.lvme div{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;border-bottom:1px dashed #1c1c20;padding-bottom:6px}
+.lvme span{color:var(--dim);text-transform:uppercase;letter-spacing:.06em;font-size:10px}
+.lvme b{font-family:'Chivo Mono',monospace;font-size:14px}
+.lvnum{display:inline-block;background:var(--panel2);border:1px solid var(--line);font-family:'Chivo Mono',monospace;font-size:10px;padding:1px 5px;margin-right:7px}
+.lvme-row{background:rgba(225,6,0,.12)}
+.lvme-row td{font-weight:700}
+.lvpit td{color:#f2b63d}
+.lvtag{font-size:9px;background:#f2b63d;color:#0b0b0c;padding:1px 4px;margin-left:6px;letter-spacing:.06em}
+#backbar{max-width:min(96vw,1040px);margin:0 auto;padding:14px 16px 0}
+#backbar:empty{padding:0}
+.backbtn{display:inline-block;background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:7px 14px;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;text-decoration:none}
+.backbtn:hover{border-color:var(--red);color:var(--red)}
 .tabbar{display:flex;gap:0;border-bottom:1px solid var(--line);margin-bottom:14px}
 .tabbtn{background:none;border:none;border-bottom:2px solid transparent;color:var(--dim);padding:10px 18px;font-family:'Titillium Web';font-weight:700;font-size:13px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
 .tabbtn:hover{color:var(--ink)}
@@ -221,6 +260,7 @@ tr.best td{color:#fff;background:linear-gradient(90deg,rgba(225,6,0,.22),transpa
   <div class="brand">Telemetry<small>iRacing session archive</small></div>
   <div class="uarea" id="uarea"></div>
 </div></header>
+<div id="backbar"></div>
 <nav id="crumb"></nav>
 <main id="app"><div class="empty">Caricamento…</div></main>
 
@@ -300,6 +340,13 @@ async function api(p, opts={}){
   if(!r.ok) throw new Error(r.status);
   return r.json();
 }
+const backbar = document.getElementById("backbar");
+// Pulsante "Indietro": sale di UN livello nella gerarchia (non usa la cronologia,
+// così funziona anche arrivando da un collegamento diretto o dopo un ricaricamento).
+const setBack = href => {
+  backbar.innerHTML = href ? `<a class="backbtn" href="${href}">← Indietro</a>` : "";
+};
+
 const setCrumb = parts => {
   crumb.innerHTML = parts.map((p,i) =>
     (i?'<span class="sep">/</span>':'') +
@@ -309,7 +356,7 @@ const setCrumb = parts => {
 
 /* ---------- Auth views ---------- */
 function viewLogin(registering=false){
-  setCrumb([]);
+  setBack(null); setCrumb([]);
   uarea.innerHTML = "";
   app.innerHTML = `<div class="auth">
     <h2>${registering?"Crea account":"Accedi"}</h2>
@@ -365,7 +412,7 @@ function renderUserArea(u){
 
 /* ---------- Nome pilota (primo accesso) ---------- */
 async function viewPilotName(){
-  setCrumb([{txt:"Nome pilota"}]);
+  setBack(null); setCrumb([{txt:"Nome pilota"}]);
   app.innerHTML = `<div class="linkcard">
     <h2 class="vt">Come ti chiami in <em>pista</em>?</h2>
     <p style="color:var(--dim);font-size:14px;line-height:1.6">Inserisci il nome del tuo account iRacing.
@@ -400,7 +447,7 @@ async function ensurePilotName(){
 /* ---------- Device link ---------- */
 async function viewLink(){
   const code = new URLSearchParams(location.search).get("code") || "";
-  setCrumb([{txt:"Collega dispositivo"}]);
+  setBack(null); setCrumb([{txt:"Collega dispositivo"}]);
   app.innerHTML = `<div class="linkcard">
     <h2 class="vt">Collega questo <em>PC</em></h2>
     <p style="color:var(--dim);font-size:14px">Il programma sul tuo PC di gara chiede di essere collegato al tuo account. Codice:</p>
@@ -422,7 +469,7 @@ async function viewLink(){
 
 /* ---------- Devices ---------- */
 async function viewDevices(){
-  setCrumb([{txt:"Le mie auto",href:"#/"},{txt:"Dispositivi"}]);
+  setBack("#/"); setCrumb([{txt:"Le mie auto",href:"#/"},{txt:"Dispositivi"}]);
   const devs = await api("devices");
   app.innerHTML = `<h2 class="vt">I miei <em>dispositivi</em></h2>` + (devs.length ?
     devs.map(d => `<div class="devrow">
@@ -435,7 +482,7 @@ async function viewDevices(){
 
 /* ---------- Impostazioni ---------- */
 async function viewSettings(){
-  setCrumb([{txt:"Le mie auto",href:"#/"},{txt:"Impostazioni"}]);
+  setBack("#/"); setCrumb([{txt:"Le mie auto",href:"#/"},{txt:"Impostazioni"}]);
   await loadProfile(true);
   const teams = await api("teams").catch(()=>[]);
   app.innerHTML = `
@@ -489,7 +536,7 @@ async function viewSettings(){
 
 /* ---------- Team ---------- */
 async function viewTeams(){
-  setCrumb([{txt:"Le mie auto",href:"#/"},{txt:"Team"}]);
+  setBack("#/"); setCrumb([{txt:"Le mie auto",href:"#/"},{txt:"Team"}]);
   const teams = await api("teams").catch(()=>[]);
   app.innerHTML = `
     <h2 class="vt">I miei <em>team</em></h2>
@@ -550,7 +597,7 @@ async function viewTeam(teamId){
   const teams = await api("teams").catch(()=>[]);
   const t = teams.find(x=>x.id==teamId);
   if (!t){ app.innerHTML = `<div class="empty">Team non trovato o non ne fai parte.</div>`; return; }
-  setCrumb([{txt:"Le mie auto",href:"#/"},{txt:"Team",href:"#/teams"},{txt:t.name}]);
+  setBack("#/teams"); setCrumb([{txt:"Le mie auto",href:"#/"},{txt:"Team",href:"#/teams"},{txt:t.name}]);
   const members = await api(`teams/${teamId}/members`).catch(()=>[]);
   const reqs = t.is_manager ? await api(`teams/${teamId}/requests`).catch(()=>[]) : [];
   app.innerHTML = `
@@ -605,7 +652,7 @@ async function viewTeam(teamId){
 
 /* ---------- Piloti ---------- */
 async function viewPilots(){
-  setCrumb([{txt:"Le mie auto",href:"#/"},{txt:"Piloti"}]);
+  setBack("#/"); setCrumb([{txt:"Le mie auto",href:"#/"},{txt:"Piloti"}]);
   app.innerHTML = `<h2 class="vt">Altri <em>piloti</em></h2>
     <input id="pq" class="txtin" placeholder="Cerca un pilota per nome">
     <div id="plist" style="margin-top:14px"></div>
@@ -624,6 +671,341 @@ async function viewPilots(){
   search();
 }
 
+
+/* ---------- PITWALL: calcolatore di strategia ---------- */
+// Modello: il tempo di ogni giro dipende da quanta benzina hai a bordo (peso) e da quanto
+// sono vecchie le gomme (degrado). Ogni sosta costa tempo. Confrontare N soste significa
+// pesare "meno soste ma auto pesante e gomme vecchie" contro "più soste ma auto leggera".
+function simulaStrategia(nSoste, giriTot, p, cfg){
+  const nStint = nSoste + 1;
+  const base = Math.floor(giriTot / nStint), resto = giriTot % nStint;
+  const lung = [];
+  for (let i = 0; i < nStint; i++) lung.push(base + (i < resto ? 1 : 0));
+  if (lung.some(L => L < 1)) return null;
+
+  let totale = 0; const stint = [];
+  let etaGomme = 0;                       // se non si cambiano, l'età prosegue
+  for (let si = 0; si < nStint; si++){
+    const L = lung[si];
+    const carb = L * p.fuel_per_lap + cfg.riserva;
+    if (carb > cfg.serbatoio) return {impossibile: true, carb: +carb.toFixed(1)};
+    if (cfg.cambiaGomme) etaGomme = 0;
+    let f = carb;
+    for (let i = 0; i < L; i++){
+      totale += p.base_time + p.k_fuel * f + p.deg * etaGomme;
+      f -= p.fuel_per_lap;
+      etaGomme++;
+    }
+    stint.push({giri: L, carb: +carb.toFixed(1)});
+  }
+  for (let i = 0; i < nSoste; i++){
+    const litri = lung[i + 1] * p.fuel_per_lap + cfg.riserva;
+    const servizio = Math.max(litri / cfg.portata, cfg.cambiaGomme ? cfg.tempoGomme : 0);
+    totale += cfg.perditaBox + servizio;
+  }
+  return {totale, stint};
+}
+
+async function viewPitwall(){
+  setBack("#/"); setCrumb([{txt:"Le mie auto",href:"#/"},{txt:"Pitwall"}]);
+  app.innerHTML = `<h2 class="vt">Pit<em>wall</em></h2>
+    <div class="tabbar">
+      <button class="tabbtn on" data-pw="live">Dal vivo</button>
+      <button class="tabbtn" data-pw="calc">Calcolatore</button>
+    </div>
+    <div id="pw-live"></div>
+    <div id="pw-calc" hidden></div>`;
+  app.querySelectorAll("[data-pw]").forEach(b => b.onclick = () => {
+    app.querySelectorAll("[data-pw]").forEach(x => x.classList.toggle("on", x === b));
+    document.getElementById("pw-live").hidden = b.dataset.pw !== "live";
+    document.getElementById("pw-calc").hidden = b.dataset.pw !== "calc";
+    if (b.dataset.pw === "live") avviaLive(); else fermaLive();
+  });
+  avviaLive();
+  await costruisciCalcolatore();
+}
+
+/* ---------- Pitwall: vista dal vivo ---------- */
+let livePoll = null, liveOutline = null, liveTrack = null, livePilot = null;
+function fermaLive(){ clearInterval(livePoll); livePoll = null; }
+
+async function avviaLive(){
+  fermaLive();
+  const host = document.getElementById("pw-live");
+  if (!host) return;
+  host.innerHTML = `<div class="empty">Cerco sessioni in corso…</div>`;
+  const chi = await api("live/pilots").catch(()=>[]);
+  if (!chi.length){
+    host.innerHTML = `<div class="board"><div class="ctx">Nessuna sessione in corso</div>
+      <p class="warnbox">Avvia il programma sul PC di gara ed entra in pista: qui compariranno la
+      classifica dal vivo, le posizioni in pista e i dati della tua auto.
+      Vedrai anche le sessioni dei tuoi compagni di team, così qualcuno può farti da ingegnere da casa.</p></div>`;
+    return;
+  }
+  const io = chi.find(c=>c.is_me);
+  liveIoId = io ? io.id : null;
+  if (!livePilot || !chi.some(c=>c.id===livePilot)) livePilot = chi[0].id;
+  host.innerHTML = `
+    ${chi.length>1 ? `<div class="board" style="margin-bottom:12px"><div class="ctx">Chi seguire</div>
+      <div class="pwsel"><select id="lvwho" class="txtin">${chi.map(c=>`<option value="${c.id}" ${c.id===livePilot?"selected":""}>${esc(c.name)}${c.is_me?" (io)":""} · ${esc(c.sessione||"")}</option>`).join("")}</select></div></div>` : ""}
+    <div id="lvbody"><div class="empty">Collegamento…</div></div>`;
+  const sel = document.getElementById("lvwho");
+  if (sel) sel.onchange = () => { livePilot = sel.value; liveOutline = null; liveTrack = null; aggiornaLive(); };
+  await aggiornaLive();
+  livePoll = setInterval(aggiornaLive, 1000);   // una volta al secondo: il ritardo utile è ~1s
+}
+
+async function aggiornaLive(){
+  const body = document.getElementById("lvbody");
+  if (!body) { fermaLive(); return; }
+  let d;
+  const mio = livePilot && chiSonoIo(livePilot);
+  try { d = await api("live" + (mio ? "" : `?pilot=${encodeURIComponent(livePilot)}`)); }
+  catch(e){ body.innerHTML = `<div class="err">Impossibile leggere lo stato dal vivo.</div>`; return; }
+  if (!d.attivo){
+    body.innerHTML = `<div class="board"><div class="ctx">Sessione non attiva</div>
+      <p class="warnbox">${esc(d.motivo || "nessun dato")}${d.fermo_da?` · fermo da ${d.fermo_da} s`:""}</p></div>`;
+    return;
+  }
+  const S = d.sessione || {}, cars = d.cars || [];
+  const nomi = {}; (d.piloti||[]).forEach(p => nomi[p.i] = p);
+  // sagoma del tracciato: la chiedo una volta sola per pista
+  if (S.pista && liveTrack !== S.pista){
+    liveTrack = S.pista;
+    liveOutline = await api(`track-outline?name=${encodeURIComponent(S.pista)}` + (mio?"":`&pilot=${encodeURIComponent(livePilot)}`)).catch(()=>({disponibile:false}));
+  }
+  const ordinate = cars.slice().sort((a,b) => (a.p||99) - (b.p||99));
+  const leader = ordinate[0];
+  const giroDi = c => (c.l||0) + (c.d||0);
+  const gap = c => {
+    if (!leader || c === leader) return "—";
+    const g = giroDi(leader) - giroDi(c);
+    return g >= 1 ? `+${Math.floor(g)} giro${Math.floor(g)>1?"i":""}` : `${(g*100).toFixed(0)}%`;
+  };
+  const soste = d.soste || {};
+  const M = d.mia || {};
+
+  body.innerHTML = `
+    <div class="board" style="margin-bottom:12px">
+      <div class="ctx">${esc(S.tipo||"Sessione")} · ${esc(S.pista||"")}${S.auto?" · "+esc(S.auto):""}
+        ${S.tempoRimasto!=null&&S.tempoRimasto<86400?" · resta "+fmtOre(S.tempoRimasto):""}
+        ${S.giriRimasti!=null&&S.giriRimasti<9999?" · "+S.giriRimasti+" giri":""}
+        ${S.airTemp!=null?" · 🌡️ "+S.airTemp.toFixed(0)+"°":""}${S.trackTemp!=null?" · 🛣️ "+S.trackTemp.toFixed(0)+"°":""}
+        <span class="lvdot">● aggiornato ${d.eta}s fa</span></div>
+    </div>
+
+    <div class="lvwrap">
+      <div class="board">
+        <div class="ctx">Posizioni in pista</div>
+        ${liveOutline && liveOutline.disponibile
+          ? `<canvas id="lvmap"></canvas>`
+          : `<div class="lvbar" id="lvbar"></div>
+             <div class="telhint">Sagoma del tracciato non disponibile: serve un giro in archivio con le coordinate. Qui la pista è srotolata: sinistra = traguardo.</div>`}
+      </div>
+
+      <div class="board">
+        <div class="ctx">La mia auto</div>
+        <div class="lvme">
+          <div><span>Carburante</span><b>${M.fuel!=null?M.fuel.toFixed(1)+" L":"—"}</b></div>
+          <div><span>Usura AS/AD</span><b>${pc(M.wear_lf)} / ${pc(M.wear_rf)}</b></div>
+          <div><span>Usura PS/PD</span><b>${pc(M.wear_lr)} / ${pc(M.wear_rr)}</b></div>
+          <div><span>Temp. ant.</span><b>${M.temp_lf!=null?M.temp_lf.toFixed(0)+"°":"—"} / ${M.temp_rf!=null?M.temp_rf.toFixed(0)+"°":"—"}</b></div>
+          <div><span>Temp. post.</span><b>${M.temp_lr!=null?M.temp_lr.toFixed(0)+"°":"—"} / ${M.temp_rr!=null?M.temp_rr.toFixed(0)+"°":"—"}</b></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="board" style="margin-top:12px">
+      <div class="ctx">Classifica</div>
+      <table class="pwtab"><thead><tr><th>Pos</th><th>Pilota</th><th>Giro</th><th>Ultimo</th><th>Migliore</th><th>Distacco</th><th>Gomme</th></tr></thead><tbody>
+      ${ordinate.map(c => {
+        const p = nomi[c.i] || {};
+        const st = soste[String(c.i)] || [];
+        const daGiri = st.length ? (c.l - st[st.length-1]) : c.l;
+        return `<tr class="${c.i===d.me?"lvme-row":""} ${c.pit?"lvpit":""}">
+          <td class="pwnum">${c.p||"-"}</td>
+          <td>${p.num?`<span class="lvnum">${esc(String(p.num))}</span>`:""}${esc(p.n||("Auto "+c.i))}${c.pit?' <span class="lvtag">BOX</span>':""}</td>
+          <td class="pwnum">${c.l||0}</td>
+          <td class="pwnum">${c.lt?fmt(c.lt):"—"}</td>
+          <td class="pwnum">${c.bt?fmt(c.bt):"—"}</td>
+          <td class="pwnum">${gap(c)}</td>
+          <td class="pwnum">${st.length?`${st.length} sost${st.length==1?"a":"e"} · ${daGiri} giri`:`${daGiri} giri`}</td>
+        </tr>`;
+      }).join("")}
+      </tbody></table>
+      <div class="telhint">Le soste degli avversari sono <b>dedotte</b> dai passaggi in corsia box: iRacing non fornisce gomme e benzina delle altre auto.</div>
+    </div>`;
+
+  if (liveOutline && liveOutline.disponibile) disegnaLiveMappa(cars, nomi, d.me);
+  else disegnaLiveBarra(cars, nomi, d.me);
+}
+
+const pc = v => v!=null ? Math.round(v*100)+"%" : "—";
+const fmtOre = s => { s=Math.max(0,Math.round(s)); const m=Math.floor(s/60); return m>=60?`${Math.floor(m/60)}h${String(m%60).padStart(2,"0")}`:`${m}:${String(s%60).padStart(2,"0")}`; };
+let liveIoId = null;                       // id del pilota che sono io, dal server
+function chiSonoIo(id){ return id === liveIoId; }
+
+function disegnaLiveMappa(cars, nomi, meIdx){
+  const cv = document.getElementById("lvmap"); if (!cv) return;
+  const pts = liveOutline.punti;
+  const dpr = Math.min(window.devicePixelRatio||1, 2), H = 300;
+  cv.style.width="100%"; cv.style.height=H+"px";
+  cv.width = cv.clientWidth*dpr; cv.height = H*dpr;
+  const ctx = cv.getContext("2d"); ctx.scale(dpr,dpr);
+  const w = cv.clientWidth, pad = 18;
+  const las = pts.map(p=>p.lat), los = pts.map(p=>p.lon);
+  const laMin=Math.min(...las), laMax=Math.max(...las), loMin=Math.min(...los), loMax=Math.max(...los);
+  const kx = Math.cos((laMin+laMax)/2*Math.PI/180) || 1;
+  const sc = Math.min((w-2*pad)/(((loMax-loMin)*kx)||1), (H-2*pad)/((laMax-laMin)||1));
+  const cx = w/2, cy = H/2, midLo=(loMin+loMax)/2, midLa=(laMin+laMax)/2;
+  const X = lo => cx + (lo-midLo)*kx*sc, Y = la => cy - (la-midLa)*sc;
+  ctx.clearRect(0,0,w,H);
+  ctx.strokeStyle="#3a3a40"; ctx.lineWidth=3; ctx.beginPath();
+  pts.forEach((p,i)=> i?ctx.lineTo(X(p.lon),Y(p.lat)):ctx.moveTo(X(p.lon),Y(p.lat)));
+  ctx.closePath(); ctx.stroke();
+  // auto collocate sulla sagoma in base alla frazione di giro
+  cars.forEach(c => {
+    let best=pts[0], bd=9;
+    pts.forEach(p=>{ const dd=Math.abs(p.d-(c.d||0)); if(dd<bd){bd=dd;best=p;} });
+    const x=X(best.lon), y=Y(best.lat);
+    const io = c.i===meIdx;
+    ctx.fillStyle = io ? "#e10600" : (c.pit ? "#f2b63d" : "#c9c9d1");
+    ctx.beginPath(); ctx.arc(x,y, io?7:5, 0, 7); ctx.fill();
+    ctx.strokeStyle="#0b0b0c"; ctx.lineWidth=1.5; ctx.stroke();
+    const p = nomi[c.i]||{};
+    if (p.num){ ctx.fillStyle="#0b0b0c"; ctx.font="700 8px 'Chivo Mono',monospace";
+      ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(String(p.num), x, y+0.5); ctx.textAlign="start"; }
+  });
+}
+
+function disegnaLiveBarra(cars, nomi, meIdx){
+  const host = document.getElementById("lvbar"); if (!host) return;
+  host.innerHTML = cars.map(c => {
+    const p = nomi[c.i]||{}; const io = c.i===meIdx;
+    return `<span class="lvcar ${io?"io":""} ${c.pit?"box":""}" style="left:${((c.d||0)*100).toFixed(2)}%" title="${esc(p.n||"")}">${esc(String(p.num||c.i))}</span>`;
+  }).join("");
+}
+
+async function costruisciCalcolatore(){
+  const app2 = document.getElementById("pw-calc");
+  const cars = await api("cars");
+  if (!cars.length){
+    app2.innerHTML = `<div class="empty">Serve almeno una sessione in archivio: il calcolatore ricava consumo e degrado dai tuoi giri.</div>`;
+    return;
+  }
+  app2.innerHTML = `
+    <div class="board" style="margin-bottom:14px">
+      <div class="ctx">Auto e pista su cui calcolare</div>
+      <div class="pwsel">
+        <select id="pwcar" class="txtin">${cars.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select>
+        <select id="pwtrack" class="txtin"></select>
+      </div>
+    </div>
+    <div id="pwbody"><div class="empty">Scegli auto e pista.</div></div>`;
+
+  const selCar = document.getElementById("pwcar"), selTrack = document.getElementById("pwtrack");
+  const caricaPiste = async () => {
+    selTrack.innerHTML = `<option>…</option>`;
+    const tr = await api(`cars/${selCar.value}/tracks`).catch(()=>[]);
+    selTrack.innerHTML = tr.length ? tr.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join("")
+                                   : `<option value="">nessuna pista</option>`;
+    if (tr.length) caricaParametri();
+    else document.getElementById("pwbody").innerHTML = `<div class="empty">Nessuna pista per questa auto.</div>`;
+  };
+  selCar.onchange = caricaPiste;
+  selTrack.onchange = () => caricaParametri();
+
+  async function caricaParametri(){
+    const body = document.getElementById("pwbody");
+    body.innerHTML = `<div class="empty">Analisi dei tuoi giri…</div>`;
+    let p;
+    try { p = await api(`strategy/params?car_id=${selCar.value}&track_id=${selTrack.value}`); }
+    catch(e){ body.innerHTML = `<div class="err">Impossibile analizzare l'archivio.</div>`; return; }
+    disegna(p, body);
+  }
+
+  function disegna(p, body){
+    const f = (k, def) => p[k] != null ? p[k] : def;
+    const fonte = k => p.fonte && p.fonte[k] ? p.fonte[k] : "valore di partenza, da regolare";
+    body.innerHTML = `
+      <div class="board" style="margin-bottom:14px">
+        <div class="ctx">Parametri ricavati dal tuo archivio · ${p.laps_total} giri su ${p.sessions} session${p.sessions==1?"e":"i"}</div>
+        <div class="pwgrid">
+          <label>Tempo di riferimento (s)<input class="txtin" id="p_base" value="${f("base_time",100)}"><span class="pwsrc">${esc(p.base_time!=null?"misurato":"da inserire")}</span></label>
+          <label>Consumo (L/giro)<input class="txtin" id="p_fuel" value="${f("fuel_per_lap",2.8)}"><span class="pwsrc">${esc(fonte("fuel_per_lap"))}</span></label>
+          <label>Degrado gomme (s/giro)<input class="txtin" id="p_deg" value="${f("deg",0.03)}"><span class="pwsrc">${esc(fonte("deg"))}</span></label>
+          <label>Effetto peso (s/litro)<input class="txtin" id="p_k" value="${f("k_fuel",0.035)}"><span class="pwsrc">${esc(fonte("k_fuel"))}</span></label>
+        </div>
+      </div>
+
+      <div class="board" style="margin-bottom:14px">
+        <div class="ctx">Gara e sosta</div>
+        <div class="pwgrid">
+          <label>Durata<span class="pwrow2"><input class="txtin" id="g_val" value="30"><select class="txtin" id="g_tipo"><option value="giri">giri</option><option value="min">minuti</option></select></span></label>
+          <label>Serbatoio (L)<input class="txtin" id="g_tank" value="60"></label>
+          <label>Riserva (L)<input class="txtin" id="g_ris" value="1.5"></label>
+          <label>Perdita per sosta (s)<input class="txtin" id="g_box" value="${p.pit_loss!=null?Math.max(8,(p.pit_loss-12)).toFixed(0):20}"><span class="pwsrc">${p.pit_loss!=null?esc("dal tuo archivio: sosta completa ~"+p.pit_loss+" s"):"corsia box, escluso il servizio"}</span></label>
+          <label>Rifornimento (L/s)<input class="txtin" id="g_rate" value="2.5"></label>
+          <label>Cambio gomme (s)<input class="txtin" id="g_gom" value="12"></label>
+        </div>
+        <label class="switchrow"><input type="checkbox" id="g_cambia" checked><span>Cambio gomme a ogni sosta</span></label>
+      </div>
+
+      <div id="pwout"></div>
+      <div class="telhint">Il confronto vale <b>in condizioni pulite</b>: neutralizzazioni e traffico sono imprevedibili e possono ribaltare qualunque strategia.</div>`;
+
+    const campi = ["p_base","p_fuel","p_deg","p_k","g_val","g_tipo","g_tank","g_ris","g_box","g_rate","g_gom","g_cambia"];
+    campi.forEach(id => { const el = document.getElementById(id); el.oninput = calcola; el.onchange = calcola; });
+    calcola();
+  }
+
+  function calcola(){
+    const n = id => parseFloat(document.getElementById(id).value) || 0;
+    const par = {base_time:n("p_base"), fuel_per_lap:n("p_fuel"), deg:n("p_deg"), k_fuel:n("p_k")};
+    const cfg = {serbatoio:n("g_tank"), riserva:n("g_ris"), perditaBox:n("g_box"),
+                 portata:Math.max(0.1,n("g_rate")), tempoGomme:n("g_gom"),
+                 cambiaGomme:document.getElementById("g_cambia").checked};
+    let giri = Math.round(n("g_val"));
+    if (document.getElementById("g_tipo").value === "min"){
+      const stima = par.base_time + par.k_fuel * (par.fuel_per_lap * 15);   // giro medio indicativo
+      giri = Math.max(1, Math.round(n("g_val") * 60 / Math.max(1, stima)));
+    }
+    const out = document.getElementById("pwout");
+    if (!par.fuel_per_lap || !par.base_time){ out.innerHTML = `<div class="empty">Inserisci consumo e tempo di riferimento.</div>`; return; }
+
+    const ris = [];
+    for (let k = 0; k <= 4; k++){
+      const r = simulaStrategia(k, giri, par, cfg);
+      if (r) ris.push({soste:k, ...r});
+    }
+    const validi = ris.filter(r => !r.impossibile);
+    if (!validi.length){
+      out.innerHTML = `<div class="err">Con questo serbatoio non si arriva in fondo nemmeno con 4 soste: aumenta il serbatoio o riduci la durata.</div>`;
+      return;
+    }
+    const migliore = validi.reduce((a,b) => b.totale < a.totale ? b : a);
+    out.innerHTML = `
+      <div class="board">
+        <div class="ctx">Confronto su ${giri} giri</div>
+        <table class="pwtab"><thead><tr><th>Strategia</th><th>Tempo totale</th><th>Differenza</th><th>Stint</th><th>Benzina</th></tr></thead><tbody>
+        ${ris.map(r => r.impossibile
+          ? `<tr class="pwno"><td>${r.soste} sost${r.soste==1?"a":"e"}</td><td colspan="4">non fattibile: servirebbero ${r.carb} L (serbatoio ${cfg.serbatoio} L)</td></tr>`
+          : `<tr class="${r===migliore?"pwbest":""}">
+              <td>${r.soste} sost${r.soste==1?"a":"e"}${r===migliore?" ★":""}</td>
+              <td class="pwnum">${fmt(r.totale)}</td>
+              <td class="pwnum">${r===migliore?"—":"+"+(r.totale-migliore.totale).toFixed(1)+" s"}</td>
+              <td class="pwnum">${r.stint.map(x=>x.giri).join(" · ")}</td>
+              <td class="pwnum">${r.stint.map(x=>x.carb).join(" · ")} L</td></tr>`).join("")}
+        </tbody></table>
+        <div class="pwnote">${migliore.soste===0
+          ? "Conviene non fermarsi." 
+          : `Conviene fermarsi ${migliore.soste} volt${migliore.soste==1?"a":"e"}, ai giri ${migliore.stint.slice(0,-1).map((x,i)=>migliore.stint.slice(0,i+1).reduce((a,b)=>a+b.giri,0)).join(", ")}.`}</div>
+      </div>`;
+  }
+
+  await caricaPiste();
+}
+
 /* ---------- Archivio (proprio o di un altro pilota, in sola lettura) ---------- */
 let viewPilot = null;        // uid del pilota che si sta guardando, null = sono io
 let shownPilotName = "";
@@ -636,11 +1018,13 @@ async function viewCars(pilot){
     const pl = await api("pilots").catch(()=>[]);
     shownPilotName = (pl.find(p=>p.id===viewPilot)||{}).name || "Pilota";
   }
+  setBack(mine ? null : "#/pilots");
   setCrumb(mine ? [{txt:"Le mie auto"}] : [{txt:"Piloti",href:"#/pilots"},{txt:shownPilotName}]);
   const cars = await api("cars"+P(viewPilot));
   const title = mine ? `Le mie <em>auto</em>` : `${esc(shownPilotName)} — <em>auto</em>`;
   const hrefOf = c => mine ? `#/car/${c.id}` : `#/pilot/${encodeURIComponent(viewPilot)}/car/${c.id}`;
-  app.innerHTML = `<h2 class="vt">${title}</h2>`
+  app.innerHTML = (mine ? `<div class="pwbar"><a class="pwbtn" href="#/pitwall">🏁 Pitwall</a></div>` : "")
+    + `<h2 class="vt">${title}</h2>`
     + (mine ? "" : `<div class="robadge">Archivio di un altro pilota · sola lettura</div>`)
     + (cars.length ?
     cars.map(c => `<div class="row" onclick="location.hash='${hrefOf(c)}'">
@@ -665,6 +1049,7 @@ async function viewTracks(carId, pilot){
   const mine = !viewPilot;
   const carName = cache.carName[carId] || (await api("cars"+P(viewPilot))).find(c=>c.id==carId)?.name || "Auto";
   cache.carName[carId] = carName;
+  setBack(mine ? "#/" : `#/pilot/${encodeURIComponent(viewPilot)}`);
   setCrumb(mine ? [{txt:"Le mie auto",href:"#/"},{txt:carName}]
                 : [{txt:"Piloti",href:"#/pilots"},{txt:shownPilotName||"Pilota",href:`#/pilot/${encodeURIComponent(viewPilot)}`},{txt:carName}]);
   const tracks = await api(`cars/${carId}/tracks`+P(viewPilot));
@@ -807,6 +1192,7 @@ async function viewLaps(sessionId){
       ${wxChips(s).length ? `<div class="wx">` + wxChips(s).map(([e,l,v]) =>
         `<div class="chip"><span class="ico">${e}</span><span class="cl">${l}</span><span class="cv">${v}</span></div>`).join("") + `</div>` : ""}` +
       (stints.length ? stints.map((st,i) => {
+        const hasFuel = d.stints.some(x=>x.laps.some(y=>y.fuel_used!=null));
         const stBest = Math.min(...st.laps.map(l=>l.time_s));
         return `<section class="stint">
         <div class="sthead" onclick="toggleSetup(${st.id})">
@@ -816,8 +1202,9 @@ async function viewLaps(sessionId){
           <span class="arrow">${openSetups.has(st.id)?"▾":"▸"}</span>
         </div>
         <div class="setupbox ${openSetups.has(st.id)?"open":""}" id="setup${st.id}">${renderSetup(st.setup, st.id)}</div>
-        <table><thead><tr><th>Giro</th><th>Tempo</th><th>🌡️</th><th>🛣️</th><th>💧</th><th>💨</th><th></th></tr></thead><tbody>` +
+        <table><thead><tr><th>Giro</th><th>Tempo</th>${hasFuel?"<th>⛽</th>":""}<th>🌡️</th><th>🛣️</th><th>💧</th><th>💨</th><th></th></tr></thead><tbody>` +
         st.laps.map(l=>`<tr class="${l.time_s===best?"best":""} ${l.has_telemetry?"clk":""}" ${l.has_telemetry?`onclick="location.hash='#/lap/${l.id}'"`:""}><td>${l.lap}</td><td>${fmt(l.time_s)}</td>` +
+          (hasFuel ? wxTd(l.fuel_used!=null?l.fuel_used.toFixed(2)+" L":null) : "") +
           wxTd(l.air_temp!=null?l.air_temp.toFixed(1)+"°":null) +
           wxTd(l.track_temp!=null?l.track_temp.toFixed(1)+"°":null) +
           wxTd(l.humidity!=null?Math.round(l.humidity*100)+"%":null) +
@@ -830,7 +1217,12 @@ async function viewLaps(sessionId){
     // evita il "lampeggio" di ridisegnare la stessa identica pagina ogni 5 secondi.
     if (isPoll && html === lastHtml) return;
     lastHtml = html;
-    setCrumb([{txt:"Le mie auto",href:"#/"},{txt:s.car},{txt:s.track},{txt:stype(s.session_type)}]);
+    const owner = s.owner || null;                       // null = archivio mio
+    const carHref = owner ? `#/pilot/${encodeURIComponent(owner)}/car/${s.car_id}` : `#/car/${s.car_id}`;
+    const rootCrumb = owner ? [{txt:"Piloti",href:"#/pilots"},{txt:s.pilot||"Pilota",href:`#/pilot/${encodeURIComponent(owner)}`}]
+                            : [{txt:"Le mie auto",href:"#/"}];
+    setBack(carHref);
+    setCrumb([...rootCrumb, {txt:s.car,href:carHref}, {txt:s.track,href:carHref}, {txt:stype(s.session_type)}]);
     app.innerHTML = html;
     window.toggleSetup = id => {
       openSetups.has(id) ? openSetups.delete(id) : openSetups.add(id);
@@ -876,7 +1268,14 @@ async function viewLapTelemetry(lapId){
   app.innerHTML = `<div class="empty">Caricamento telemetria…</div>`;
   const d0 = await api(`laps/${lapId}/telemetry`);
   const L0 = d0.lap;
-  setCrumb([{txt:"Le mie auto",href:"#/"},{txt:L0.car},{txt:L0.track},{txt:"Giro "+L0.lap}]);
+  const owner0 = L0.owner || null;
+  const carHref0 = owner0 ? `#/pilot/${encodeURIComponent(owner0)}/car/${L0.car_id}` : `#/car/${L0.car_id}`;
+  const sessHref0 = `#/session/${L0.session_id}`;
+  const rootCrumb0 = owner0 ? [{txt:"Piloti",href:"#/pilots"},{txt:L0.pilot||"Pilota",href:`#/pilot/${encodeURIComponent(owner0)}`}]
+                            : [{txt:"Le mie auto",href:"#/"}];
+  setBack(sessHref0);
+  setCrumb([...rootCrumb0, {txt:L0.car,href:carHref0}, {txt:L0.track,href:carHref0},
+            {txt:"Sessione",href:sessHref0}, {txt:"Giro "+L0.lap}]);
 
   const MAX_LAPS = 3;
   const PALETTE = ["#ffffff","#8ab4ff","#35d07f","#f2b63d","#c07bff"];
@@ -1640,6 +2039,7 @@ function pickLapModal(pilots, trackId, usedLapIds, trackName){
 /* ---------- Router ---------- */
 async function route(){
   clearInterval(pollTimer);
+  fermaLive();
   const u = auth.currentUser;
   if (!u) { viewLogin(); return; }
   await loadProfile();
@@ -1653,6 +2053,7 @@ async function route(){
     if (h === "devices") await viewDevices();
     else if (h === "settings") await viewSettings();
     else if (h === "pilots") await viewPilots();
+    else if (h === "pitwall") await viewPitwall();
     else if (h === "teams") await viewTeams();
     else if ((m = h.match(/^team\/(\d+)/))) await viewTeam(+m[1]);
     else if ((m = h.match(/^pilot\/([^/]+)\/car\/(\d+)/))) await viewTracks(+m[2], decodeURIComponent(m[1]));

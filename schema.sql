@@ -174,3 +174,30 @@ DELETE FROM laps a USING laps b
 -- identificativo (client_lap_uid nullo) restano validi e non vengono toccati.
 CREATE UNIQUE INDEX IF NOT EXISTS uq_laps_session_lapuid
     ON laps (session_id, client_lap_uid) WHERE client_lap_uid IS NOT NULL;
+
+
+-- ============ v19: doppioni fra sessioni diverse ============
+-- L'identificativo di giro generato dall'agente è un uuid, quindi è unico di per sé:
+-- vincolarlo a livello globale (e non solo dentro la stessa sessione) impedisce che lo
+-- stesso giro finisca due volte in archivio sotto sessioni diverse.
+DELETE FROM lap_telemetry a USING lap_telemetry b
+ WHERE a.lap_uid = b.lap_uid AND a.id > b.id;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_telemetry_lapuid ON lap_telemetry (lap_uid);
+
+DELETE FROM laps a USING laps b
+ WHERE a.client_lap_uid IS NOT NULL AND a.client_lap_uid = b.client_lap_uid AND a.id > b.id;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_laps_lapuid
+    ON laps (client_lap_uid) WHERE client_lap_uid IS NOT NULL;
+
+-- ============ v21: dati per la strategia (uno per giro, non ad alta frequenza) ============
+ALTER TABLE laps ADD COLUMN IF NOT EXISTS fuel        DOUBLE PRECISION;  -- residuo a fine giro
+ALTER TABLE laps ADD COLUMN IF NOT EXISTS fuel_start  DOUBLE PRECISION;
+ALTER TABLE laps ADD COLUMN IF NOT EXISTS fuel_used   DOUBLE PRECISION;
+ALTER TABLE laps ADD COLUMN IF NOT EXISTS wear_lf     DOUBLE PRECISION;
+ALTER TABLE laps ADD COLUMN IF NOT EXISTS wear_rf     DOUBLE PRECISION;
+ALTER TABLE laps ADD COLUMN IF NOT EXISTS wear_lr     DOUBLE PRECISION;
+ALTER TABLE laps ADD COLUMN IF NOT EXISTS wear_rr     DOUBLE PRECISION;
+ALTER TABLE laps ADD COLUMN IF NOT EXISTS temp_lf     DOUBLE PRECISION;
+ALTER TABLE laps ADD COLUMN IF NOT EXISTS temp_rf     DOUBLE PRECISION;
+ALTER TABLE laps ADD COLUMN IF NOT EXISTS temp_lr     DOUBLE PRECISION;
+ALTER TABLE laps ADD COLUMN IF NOT EXISTS temp_rr     DOUBLE PRECISION;

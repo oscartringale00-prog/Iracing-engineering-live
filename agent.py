@@ -1,5 +1,9 @@
 import configparser
+import os
+import re
 import json
+import logging
+import logging.handlers
 import queue
 import select
 import threading
@@ -27,6 +31,19 @@ HEARTBEAT_S = 5
 LINK_POLL_S = 3
 LINK_TIMEOUT_S = 600
 TICK_S = 1 / 60  # frequenza nativa iRacing
+
+
+# Variabili per la strategia: NON sono canali ad alta frequenza.
+# Usura e temperature gomme cambiano lentamente e al muretto servono per giro, non 60 volte
+# al secondo: registrarle una volta a fine giro costa una manciata di numeri invece di
+# raddoppiare il peso della telemetria.
+STRATEGY_VARS = [
+    ("FuelLevel", "fuel", 3),
+    ("LFwearM", "wear_lf", 4), ("RFwearM", "wear_rf", 4),
+    ("LRwearM", "wear_lr", 4), ("RRwearM", "wear_rr", 4),
+    ("LFtempCM", "temp_lf", 1), ("RFtempCM", "temp_rf", 1),
+    ("LRtempCM", "temp_lr", 1), ("RRtempCM", "temp_rr", 1),
+]
 
 # Canali telemetria ad alta frequenza: (nome SDK, chiave, decimali)
 TELEMETRY_CHANNELS = [
@@ -124,6 +141,12 @@ class IracingSource:
         self.last_sent_time = None   # tempo dell'ultimo giro realmente inviato
         self.pending_stint = None    # stint letto all'uscita dai box, in attesa del prossimo giro
         self.lap_invalid = False     # giro in corso troncato (teletrasporto/reset)
+        self.buf_lap_num = None      # numero di giro a cui appartiene il buffer
+        self.fuel_start = None       # carburante a inizio giro
+        self.last_live = 0.0         # ultimo invio della fotografia di gara
+        self._last_strat = {}
+        self.fuel_last = None        # ultimo valore letto
+        self.diag_done = False       # diagnosi canali gia' stampata?
         self.prev_pct = None         # posizione sul giro al tick precedente
 
     def _reset_buffer(self):
@@ -214,6 +237,8 @@ class IracingSource:
             self.last_sent_time = None
             self.pending_stint = None
             self.lap_invalid = False
+            self.buf_lap_num = None
+            self.diag_done = False
             self.prev_pct = None
         if was != self.connected:
             events.append(("status", self.connected))
@@ -226,6 +251,15 @@ class IracingSource:
         last_time = self.ir["LapLastLapTime"]
         on_pit = bool(self.ir["OnPitRoad"])
         lap_pct = self._safe_var("LapDistPct")
+        strat = {}
+        for sdk_name, key, dec in STRATEGY_VARS:
+            v = self._safe_var(sdk_name)
+            strat[key] = round(float(v), dec) if v is not None else None
+        self._last_strat = strat
+        if strat.get("fuel") is not None:
+            if self.fuel_start is None:
+                self.fuel_start = strat["fuel"]
+            self.fuel_last = strat["fuel"]
         sample = {}
         for sdk_name, key, dec in TELEMETRY_CHANNELS:
             try:
@@ -234,6 +268,30 @@ class IracingSource:
             except Exception:
                 sample[key] = None
         self.ir.unfreeze_var_buffer_latest()
+
+        # Diagnosi una tantum: segnala quali canali iRacing NON sta fornendo.
+        # Serve a capire subito, per esempio, se mancano le coordinate della mappa.
+        if not self.diag_done:
+            self.diag_done = True
+            mancanti = [k for _, k, _ in TELEMETRY_CHANNELS if sample.get(k) is None]
+            mancanti += [k for _, k, _ in STRATEGY_VARS if strat.get(k) is None]
+            if mancanti:
+                print("ATTENZIONE: iRacing non fornisce questi dati:", ", ".join(mancanti))
+                if "lat" in mancanti or "lon" in mancanti:
+                    print("  -> mancano le coordinate: la mappa del circuito non potra' essere disegnata.")
+                if "fuel" in mancanti:
+                    print("  -> manca il carburante: il calcolatore di strategia non potra' misurare i consumi.")
+            else:
+                print("Tutti i canali telemetrici sono disponibili (mappa inclusa).")
+
+        # Fotografia della gara a bassa frequenza (una volta al secondo): serve al Pitwall
+        # e non deve mai disturbare la telemetria né il ciclo di lettura.
+        now_l = time.time()
+        if now_l - self.last_live >= LIVE_EVERY_S:
+            self.last_live = now_l
+            live = self._read_live()
+            if live:
+                events.append(("live", live))
 
         car, track, num, stype = self._read_context()
         key = (car, track, num)
@@ -250,6 +308,7 @@ class IracingSource:
             self.on_pit = on_pit
             events.append(("stint", self.stint))
             self._reset_buffer()
+            self.buf_lap_num = lap
         elif self.on_pit and not on_pit:
             # Uscita dai box: il setup va letto ORA (è aggiornato), ma il nuovo stint
             # verrà applicato solo al primo giro completato dopo l'uscita, così il giro
@@ -263,35 +322,108 @@ class IracingSource:
             self.buf_valid = False
             self.lap_invalid = True
 
+        if lap is not None and lap != self.last_lap:
+            # Un giro reale ha SEMPRE un tempo nuovo. Se il tempo è identico all'ultimo inviato,
+            # il contatore è scattato senza che un giro sia davvero finito (rientro/reset):
+            # è una transizione FASULLA a metà di un giro ancora in corso.
+            same_time = (self.last_sent_time is not None and last_time
+                         and abs(float(last_time) - self.last_sent_time) <= 0.002)
+            valid = (self.buf_lap_num is not None and last_time and last_time > 0
+                     and not self.lap_invalid and not same_time)
+            if valid:
+                wx = self._read_weather(num)
+                wx.pop("trackUsage", None)
+                # numero del giro a cui appartiene DAVVERO il buffer (non il contatore attuale,
+                # che può essere avanzato per via di transizioni fasulle)
+                strategia = {k: v for k, v in strat.items() if v is not None}
+                if self.fuel_start is not None and self.fuel_last is not None:
+                    strategia["fuel_start"] = self.fuel_start
+                    strategia["fuel_used"] = round(max(0.0, self.fuel_start - self.fuel_last), 3)
+                events.append(("lap", {"lap": self.buf_lap_num, "lastLapTime": float(last_time),
+                                       "lapUid": self.lap_uid, **wx, **strategia}))
+                self.last_sent_time = float(last_time)
+                if self.buf_valid and self.buf and len(self.buf["lapdist"]) > 10:
+                    events.append(("telemetry", {"lapUid": self.lap_uid,
+                                                 "samples": _riduci(self.buf)}))
+                # Il nuovo stint entra in vigore al primo giro davvero completato dopo i box
+                if self.pending_stint:
+                    self.stint = self.pending_stint
+                    self.pending_stint = None
+                    events.append(("stint", self.stint))
+            # Chiudo il buffer e ne apro uno nuovo quando il giro è davvero finito. Lo faccio anche
+            # se il giro era stato invalidato da un teletrasporto: quel giro è perso comunque, e
+            # tenerlo aperto farebbe scartare per errore anche il PRIMO GIRO BUONO successivo.
+            if not same_time or self.lap_invalid:
+                self.lap_invalid = False
+                self.buf_valid = True
+                self._reset_buffer()
+                self.buf_lap_num = lap
+                self.fuel_start = strat.get("fuel")
+            # Il contatore si allinea sempre, altrimenti la transizione ri-scatterebbe a ogni tick.
+            # In caso di transizione fasulla il buffer NON viene toccato: il giro vero prosegue.
+            self.last_lap = lap
+
+        # Il campione corrente appartiene al giro attualmente in corso: dopo un giro completato
+        # finisce nel buffer NUOVO, così non lascia in coda un punto del giro successivo
+        # (che sul grafico faceva tornare la linea indietro attraversando tutto il tracciato).
         if self.buf is not None:
             for _, k, _ in TELEMETRY_CHANNELS:
                 self.buf[k].append(sample[k])
         self.prev_pct = lap_pct
-
-        if lap is not None and lap != self.last_lap:
-            valid = (self.last_lap is not None and last_time and last_time > 0
-                     and not self.lap_invalid
-                     # un giro reale ha SEMPRE un tempo nuovo: se è identico all'ultimo
-                     # inviato, iRacing non l'ha aggiornato -> giro fantasma, da scartare
-                     and (self.last_sent_time is None
-                          or abs(float(last_time) - self.last_sent_time) > 0.002))
-            if valid:
-                wx = self._read_weather(num)
-                wx.pop("trackUsage", None)
-                events.append(("lap", {"lap": self.last_lap, "lastLapTime": float(last_time),
-                                       "lapUid": self.lap_uid, **wx}))
-                self.last_sent_time = float(last_time)
-                if self.buf_valid and self.buf and len(self.buf["lapdist"]) > 10:
-                    events.append(("telemetry", {"lapUid": self.lap_uid, "samples": self.buf}))
-            # Il nuovo stint entra in vigore ORA: i giri successivi apparterranno ad esso
-            if self.pending_stint:
-                self.stint = self.pending_stint
-                self.pending_stint = None
-                events.append(("stint", self.stint))
-            self.last_lap = lap
-            self.lap_invalid = False
-            self._reset_buffer()
         return events
+
+
+    def _read_live(self):
+        """Fotografia della gara: posizione di tutte le auto, classifica, stato box.
+        iRacing fornisce questi dati per TUTTE le auto, ma carburante e gomme solo per la propria."""
+        def arr(nome):
+            v = self._safe_var(nome)
+            return list(v) if v is not None else None
+        lap = arr("CarIdxLap"); dist = arr("CarIdxLapDistPct")
+        if lap is None or dist is None:
+            return None
+        pos = arr("CarIdxPosition") or []
+        pit = arr("CarIdxOnPitRoad") or []
+        surf = arr("CarIdxTrackSurface") or []
+        last = arr("CarIdxLastLapTime") or []
+        best = arr("CarIdxBestLapTime") or []
+        cars = []
+        for i in range(len(dist)):
+            if dist[i] is None or dist[i] < 0:
+                continue                      # auto non in pista
+            if i < len(surf) and surf[i] is not None and surf[i] < 0:
+                continue
+            cars.append({
+                "i": i,
+                "p": int(pos[i]) if i < len(pos) and pos[i] else 0,
+                "l": int(lap[i]) if lap[i] is not None else 0,
+                "d": round(float(dist[i]), 4),
+                "pit": 1 if (i < len(pit) and pit[i]) else 0,
+                "lt": round(float(last[i]), 3) if i < len(last) and last[i] and last[i] > 0 else None,
+                "bt": round(float(best[i]), 3) if i < len(best) and best[i] and best[i] > 0 else None,
+            })
+        me = self._safe_var("PlayerCarIdx")
+        di = self._safe_var("DriverInfo") or {}
+        piloti = [{"i": d.get("CarIdx"), "n": d.get("UserName"), "num": d.get("CarNumber"),
+                   "auto": d.get("CarScreenNameShort")}
+                  for d in (di.get("Drivers") or []) if d.get("CarIdx") is not None]
+        return {
+            "ts": time.time(),
+            "me": int(me) if me is not None else None,
+            "cars": cars,
+            "piloti": piloti,
+            "sessione": {
+                "tipo": self._read_context()[3],
+                "pista": self._read_context()[1],
+                "auto": self._read_context()[0],
+                "tempoRimasto": self._safe_var("SessionTimeRemain"),
+                "giriRimasti": self._safe_var("SessionLapsRemain"),
+                "bandiera": self._safe_var("SessionFlags"),
+                "airTemp": self._safe_var("AirTemp"),
+                "trackTemp": self._safe_var("TrackTempCrew"),
+            },
+            "mia": {k: v for k, v in (self._last_strat or {}).items() if v is not None},
+        }
 
     def _safe_var(self, name):
         try:
@@ -338,11 +470,18 @@ class DemoSource:
         self.next_at = time.time() + 3
         self.session = None
         self.stint = None
+        self.anomalie = ["sosta", "teletrasporto", "fasulla"]   # riprodotte una per giro
+        self.fuel_demo = 45.0       # serbatoio simulato
+        self.wear_demo = 1.0        # 1.0 = gomma nuova
+        self.last_live_demo = 0.0
+        self.avvio_demo = time.time()
 
     def _fake_telemetry(self):
-        """Giro sintetico: pista a forma di fagiolo, ~300 campioni."""
+        """Giro sintetico realistico: pista a forma di fagiolo, campioni come un giro vero.
+        Il numero di campioni rispecchia la frequenza reale (~60 al secondo per ~110 s), così i
+        collaudi fanno emergere gli stessi problemi che prima si vedevano solo in pista."""
         import math
-        n = 300
+        n = DEMO_SAMPLES
         buf = {key: [] for _, key, _ in TELEMETRY_CHANNELS}
         for i in range(n):
             d = i / n
@@ -392,6 +531,30 @@ class DemoSource:
             name = s["stints"][self.sti][0]
             self.stint = {"uid": str(uuid.uuid4()), "setupName": name, "setup": self.FAKE_SETUP(self.sti + 1)}
             events.append(("stint", self.stint))
+        now_l = time.time()
+        if now_l - self.last_live_demo >= LIVE_EVERY_S:
+            self.last_live_demo = now_l
+            t = now_l - self.avvio_demo        # tempo trascorso, non tempo assoluto
+            cars = []
+            for i in range(12):
+                vel = 1/108.0 * (1 + (i % 5) * 0.004)       # ritmi leggermente diversi
+                d = ((t * vel) + i * 0.083) % 1.0
+                giro = int((t * vel) + i * 0.083)
+                cars.append({"i": i, "p": i + 1, "l": giro, "d": round(d, 4),
+                             "pit": 1 if (i == 4 and int(t) % 60 < 8) else 0,
+                             "lt": round(108 + (i % 5) * 0.4, 3),
+                             "bt": round(107.2 + (i % 5) * 0.35, 3)})
+            events.append(("live", {
+                "ts": t, "me": 0, "cars": cars,
+                "piloti": [{"i": i, "n": f"Pilota {i+1}", "num": str(10 + i), "auto": "MX-5"} for i in range(12)],
+                "sessione": {"tipo": "Race", "pista": "Autodromo Nazionale Monza", "auto": "Mazda MX-5 Cup",
+                             "tempoRimasto": 1800, "giriRimasti": 16,
+                             "bandiera": 0, "airTemp": 24.5, "trackTemp": 37.0},
+                "mia": {"fuel": round(self.fuel_demo, 1), "wear_lf": round(self.wear_demo, 3),
+                        "wear_rf": round(self.wear_demo - 0.01, 3), "wear_lr": round(self.wear_demo - 0.02, 3),
+                        "wear_rr": round(self.wear_demo - 0.03, 3), "temp_lf": 83.0, "temp_rf": 85.0,
+                        "temp_lr": 80.0, "temp_rr": 82.0}}))
+
         if time.time() >= self.next_at:
             self.lap += 1
             lap_uid = str(uuid.uuid4())
@@ -401,7 +564,19 @@ class DemoSource:
                                    "trackTemp": round(36 + random.uniform(-2, 2), 1),
                                    "humidity": round(random.uniform(0.4, 0.6), 2),
                                    "windVel": round(random.uniform(1, 6), 1),
-                                   "windDir": round(random.uniform(0, 6.28), 2)}))
+                                   "windDir": round(random.uniform(0, 6.28), 2),
+                                   # dati di strategia simulati: consumo e usura progressiva
+                                   "fuel": round(self.fuel_demo, 3),
+                                   "fuel_start": round(self.fuel_demo + 2.8, 3),
+                                   "fuel_used": round(2.75 + random.uniform(-0.15, 0.15), 3),
+                                   "wear_lf": round(self.wear_demo, 4), "wear_rf": round(self.wear_demo - 0.01, 4),
+                                   "wear_lr": round(self.wear_demo - 0.02, 4), "wear_rr": round(self.wear_demo - 0.03, 4),
+                                   "temp_lf": round(82 + random.uniform(-4, 4), 1),
+                                   "temp_rf": round(84 + random.uniform(-4, 4), 1),
+                                   "temp_lr": round(79 + random.uniform(-4, 4), 1),
+                                   "temp_rr": round(81 + random.uniform(-4, 4), 1)}))
+            self.fuel_demo = max(0.0, self.fuel_demo - 2.75)
+            self.wear_demo = max(0.0, self.wear_demo - 0.012)
             events.append(("telemetry", {"lapUid": lap_uid, "samples": self._fake_telemetry()}))
             self.next_at = time.time() + 6
             if self.lap % s["stints"][self.sti][1] == 0:
@@ -413,37 +588,124 @@ class DemoSource:
         return events
 
 
+DEMO_SAMPLES = 6600        # campioni per giro in modalità demo: come un giro vero
+
+# ====== REGISTRO SU FILE ======
+# Serve all'assistenza: quando qualcosa va storto sul PC di un cliente, la finestra nera si chiude
+# e non resta traccia. Qui teniamo data/ora, eventi ed errori, con un tetto di dimensione.
+LOG_MAX_BYTES = 1_000_000     # 1 MB, poi si ricicla
+LOG_BACKUPS = 2
+_logger = None
+_log_path = None
+
+
+def _mask(txt):
+    """Non lascia mai finire la chiave del dispositivo nel registro."""
+    txt = str(txt)
+    key = globals().get("_device_key_corrente")
+    if key and len(key) > 6:
+        txt = txt.replace(key, key[:4] + "…" + key[-2:])
+    return re.sub(r"(device_key=)[^&\s\"']+", r"\1<nascosta>", txt)
+
+
+def setup_log():
+    """Prepara il file di registro. Se non è scrivibile, si prosegue senza: mai bloccare l'agente."""
+    global _logger, _log_path
+    try:
+        base = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
+        cartella = Path(base) / "iRacingTelemetry"
+        cartella.mkdir(parents=True, exist_ok=True)
+        _log_path = cartella / "iracing-telemetry.log"
+        h = logging.handlers.RotatingFileHandler(_log_path, maxBytes=LOG_MAX_BYTES,
+                                                 backupCount=LOG_BACKUPS, encoding="utf-8")
+        h.setFormatter(logging.Formatter("%(asctime)s  %(message)s", "%Y-%m-%d %H:%M:%S"))
+        lg = logging.getLogger("iracing")
+        lg.setLevel(logging.INFO)
+        lg.handlers.clear()
+        lg.addHandler(h)
+        _logger = lg
+        return _log_path
+    except Exception:
+        _logger = None
+        _log_path = None
+        return None
+
+
+def log(msg, errore=None):
+    """Stampa a schermo (in italiano, per l'utente) e scrive nel registro (con il dettaglio tecnico)."""
+    print(msg)
+    if _logger is None:
+        return
+    try:
+        if errore is not None:
+            _logger.error(_mask(msg) + " | dettaglio: " + _mask(repr(errore)))
+        else:
+            _logger.info(_mask(msg))
+    except Exception:
+        pass
+
+
+MAX_SAMPLES = 9000         # tetto per giro (~1,4 MB): oltre, si riducono in modo uniforme
+LIVE_EVERY_S = 1.0         # fotografia della gara: una volta al secondo
 SEND_TIMEOUT = 45          # tempo concesso all'invio: la telemetria di un giro può superare 1 MB
-SEND_QUEUE_MAX = 12        # se la rete è troppo lenta si scartano le telemetrie più vecchie
+QUEUE_SOFT = 8             # oltre questa attesa si smette di accodare telemetria (pesante)
+QUEUE_HARD = 40            # tetto assoluto: oltre, si scarta tutto per non far crescere la memoria
 
 
-class Sender:
-    """Invia i messaggi su un thread dedicato.
-    Serve perché spedire la telemetria di un giro (oltre 1 MB) può richiedere secondi su rete
-    lenta: se lo facesse il ciclo principale, l'agente smetterebbe di leggere iRacing proprio
-    all'inizio del giro successivo, perdendone i primi istanti.
-    websocket-client usa lucchetti distinti per invio e lettura, quindi è sicuro leggere dal
-    thread principale mentre questo invia."""
+def _riduci(buf):
+    """Se il giro ha troppi campioni li dirada in modo uniforme lungo tutto il giro.
+    Conserva il primo e l'ultimo campione e mantiene tutti i canali della stessa lunghezza,
+    così la forma delle curve e la copertura del giro restano fedeli."""
+    n = len(buf["lapdist"])
+    if n <= MAX_SAMPLES:
+        return buf
+    passo = n / MAX_SAMPLES
+    idx = [int(i * passo) for i in range(MAX_SAMPLES)]
+    if idx[-1] != n - 1:
+        idx[-1] = n - 1
+    print(f"  giro molto lungo ({n} campioni): ridotti a {len(idx)} per non appesantire l'invio")
+    return {k: [v[i] for i in idx] for k, v in buf.items()}
+
+
+class Link:
+    """Gestisce la connessione al server con DUE thread dedicati: uno invia, uno riceve.
+
+    Perché così: spedire la telemetria di un giro (oltre 1 MB) richiede secondi su rete lenta.
+    Se lo facesse il ciclo principale, l'agente smetterebbe di leggere iRacing proprio all'inizio
+    del giro successivo. E se la lettura avvenisse dal ciclo principale toccando il timeout del
+    socket (come faceva la vecchia funzione drain), interromperebbe a metà un invio in corso.
+    Separando i due compiti, il ciclo principale non tocca mai il socket.
+    """
 
     def __init__(self, ws):
         self.ws = ws
         self.q = queue.Queue()
         self.error = None
-        self._t = threading.Thread(target=self._run, daemon=True)
-        self._t.start()
+        self.scartati = 0
+        self._closed = False
+        self._ts = threading.Thread(target=self._send_loop, daemon=True)
+        self._tr = threading.Thread(target=self._recv_loop, daemon=True)
+        self._ts.start()
+        self._tr.start()
 
     def send(self, obj):
-        """Accoda un messaggio. Ritorna False se è stato scartato per congestione."""
-        if self.error:
+        """Accoda un messaggio. Ritorna False se scartato per congestione."""
+        if self.error or self._closed:
             return False
-        if self.q.qsize() >= SEND_QUEUE_MAX:
-            # coda intasata: sacrifico la telemetria (pesante) ma non i giri (leggeri e preziosi)
-            if obj.get("type") == "lap_telemetry":
-                return False
+        n = self.q.qsize()
+        # I giri sono leggeri e preziosi, la telemetria è pesante: si sacrifica prima la seconda.
+        if n >= 3 and obj.get("type") == "live":
+            return False          # una fotografia vecchia è inutile: meglio scartarla subito
+        if n >= QUEUE_SOFT and obj.get("type") == "lap_telemetry":
+            self.scartati += 1
+            return False
+        if n >= QUEUE_HARD:
+            self.scartati += 1
+            return False
         self.q.put(obj)
         return True
 
-    def _run(self):
+    def _send_loop(self):
         while True:
             obj = self.q.get()
             if obj is None:
@@ -451,36 +713,47 @@ class Sender:
             try:
                 self.ws.send(json.dumps(obj))
             except Exception as e:
-                self.error = e
+                if not self._closed:
+                    self.error = e
                 return
 
-    def stop(self):
+    def _recv_loop(self):
+        # Consuma i messaggi in arrivo e si accorge subito se la connessione cade.
+        while not self._closed:
+            try:
+                self.ws.recv()
+            except websocket.WebSocketTimeoutException:
+                continue
+            except Exception as e:
+                if not self._closed:
+                    self.error = e
+                return
+
+    def close(self):
+        """Chiude la connessione e ATTENDE i thread, così non ne restano di orfani."""
+        self._closed = True
         try:
             self.q.put_nowait(None)
         except Exception:
             pass
-
-
-def drain(ws):
-    """Legge gli eventuali messaggi in arrivo senza bloccare il ciclo.
-    Usa select per sapere se c'è qualcosa da leggere, invece di affidarsi a un timeout minuscolo
-    (che, applicandosi anche all'invio, impediva la spedizione della telemetria)."""
-    try:
-        ready, _, _ = select.select([ws.sock], [], [], 0)
-        if not ready:
-            return
-        ws.sock.settimeout(0.2)          # solo per questa lettura
         try:
-            ws.recv()
-        finally:
-            ws.sock.settimeout(SEND_TIMEOUT)
-    except websocket.WebSocketTimeoutException:
-        pass
-    except OSError:
-        pass
+            self.ws.close()          # sblocca anche la lettura ferma in attesa
+        except Exception:
+            pass
+        for t in (self._ts, self._tr):
+            t.join(timeout=2)
+        return self.threads_alive() == 0
+
+    def threads_alive(self):
+        return sum(1 for t in (self._ts, self._tr) if t.is_alive())
 
 
 def run():
+    p = setup_log()
+    if p:
+        print(f"Registro attività: {p}")
+    else:
+        print("Registro attività non disponibile (cartella non scrivibile): proseguo comunque.")
     cfg = load_config()
     backend = cfg["agent"]["backend"].rstrip("/")
     http_url = backend.replace("wss://", "https://").replace("ws://", "http://")
@@ -495,60 +768,65 @@ def run():
         return
 
     backoff = 1
+    ws = None
     while True:
-        sender = None
+        link = None
         try:
+            globals()["_device_key_corrente"] = device_key
             ws = websocket.create_connection(f"{backend}/ws/agent?device_key={device_key}", timeout=15)
             # Timeout ampio: serve all'INVIO, perché la telemetria di un giro può superare 1 MB
             # e su rete reale non entra tutta in una volta nel buffer di sistema.
             # La lettura resta non bloccante grazie a select (vedi più sotto).
             ws.settimeout(SEND_TIMEOUT)
-            sender = Sender(ws)
+            link = Link(ws)
             backoff = 1
-            print("Connesso al server.")
+            log("Connesso al server.")
             # Dopo una riconnessione: riallineo sessione/stint e scarto il giro in corso (incompleto)
             if getattr(source, "session", None):
-                sender.send({"type": "session_start", **source.session})
+                link.send({"type": "session_start", **source.session})
                 if getattr(source, "stint", None):
-                    sender.send({"type": "stint_start", **source.stint})
+                    link.send({"type": "stint_start", **source.stint})
             if hasattr(source, "invalidate_lap"):
                 source.invalidate_lap()
             last_hb = time.time()
-            last_recv = time.time()
             while True:
-                if sender.error:
-                    raise sender.error
+                if link.error:
+                    raise link.error
                 for kind, data in source.poll():
                     if kind == "status":
                         print("iRacing:", "connesso" if data else "in attesa...")
                     elif kind == "session":
-                        print(f"Sessione: {data['sessionType']} | {data['car']} @ {data['track']}")
-                        sender.send({"type": "session_start", **data})
+                        log(f"Sessione: {data['sessionType']} | {data['car']} @ {data['track']}")
+                        link.send({"type": "session_start", **data})
                     elif kind == "stint":
-                        print(f"Stint: setup '{data['setupName']}'")
-                        sender.send({"type": "stint_start", **data})
+                        log(f"Stint: setup '{data['setupName']}'")
+                        link.send({"type": "stint_start", **data})
+                    elif kind == "live":
+                        link.send({"type": "live", **data})
                     elif kind == "telemetry":
                         n = len(data["samples"]["lapdist"])
-                        if sender.send({"type": "lap_telemetry", **data}):
-                            print(f"  telemetria giro in invio ({n} campioni)")
+                        if link.send({"type": "lap_telemetry", **data}):
+                            log(f"  telemetria giro in invio ({n} campioni)")
                         else:
-                            print("  ATTENZIONE: connessione lenta, telemetria di questo giro non inviata")
+                            log("  ATTENZIONE: connessione lenta, telemetria di questo giro non inviata")
                     else:
-                        print(f"Giro {data['lap']}: {data['lastLapTime']:.3f}s")
-                        sender.send({"type": "lap", **data, "ts": time.time()})
+                        log(f"Giro {data['lap']}: {data['lastLapTime']:.3f}s")
+                        link.send({"type": "lap", **data, "ts": time.time()})
                 now = time.time()
                 if now - last_hb >= HEARTBEAT_S:
-                    sender.send({"type": "hb"})
+                    link.send({"type": "hb"})
                     last_hb = now
-                if now - last_recv >= 1.0:
-                    last_recv = now
-                    drain(ws)
         except KeyboardInterrupt:
-            if sender: sender.stop()
+            if link:
+                link.close()
             return
         except Exception as e:
-            if sender: sender.stop()
-            print(f"Connessione persa ({e}), ritento tra {backoff}s...")
+            # Chiudo sempre il collegamento vecchio e attendo i suoi thread: altrimenti a ogni
+            # riconnessione resterebbero una connessione aperta a vuoto e thread orfani.
+            if link:
+                link.close()
+                link = None
+            log(f"Connessione persa, ritento tra {backoff}s...", e)
             time.sleep(backoff)
             backoff = min(backoff * 2, 30)
 

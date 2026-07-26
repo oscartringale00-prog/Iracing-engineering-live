@@ -16,7 +16,22 @@ BASE = Path(__file__).parent
 SCHEMA = (BASE / "schema.sql").read_text()
 DB_URL = os.environ.get("DATABASE_URL", "postgresql://postgres:postgres@localhost/iracing")
 PROJECT_ID = os.environ.get("FIREBASE_PROJECT_ID", "")
-AUTH_DEBUG = os.environ.get("AUTH_DEBUG") == "1"  # solo per test locali, MAI in produzione
+def _debug_consentito():
+    """Il token finto di prova è utilizzabile SOLO su una macchina locale.
+    In produzione non deve essere attivabile nemmeno per errore: basterebbe una variabile
+    d'ambiente impostata per sbaglio per aprire gli archivi di tutti i clienti."""
+    if os.environ.get("AUTH_DEBUG") != "1":
+        return False
+    if any(k.startswith("RAILWAY_") for k in os.environ):
+        print("ATTENZIONE: AUTH_DEBUG ignorato, non è utilizzabile in produzione.")
+        return False
+    if not any(h in DB_URL for h in ("localhost", "127.0.0.1", "@postgres/")):
+        print("ATTENZIONE: AUTH_DEBUG ignorato, il database non è locale.")
+        return False
+    return True
+
+
+AUTH_DEBUG = _debug_consentito()  # solo test locali; in produzione è sempre disattivato
 LINK_CODE_TTL = 600
 
 _jwk_client = jwt.PyJWKClient(
@@ -181,13 +196,18 @@ async def ws_agent(ws: WebSocket, device_key: str):
                 elif t == "lap" and session_id is not None:
                     async with pool.acquire() as c:
                         await c.execute(
-                            "INSERT INTO laps (session_id, stint_id, lap, time_s, client_lap_uid, air_temp, track_temp, humidity, wind_vel, wind_dir) "
-                            "VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) "
-                            "ON CONFLICT (session_id, client_lap_uid) WHERE client_lap_uid IS NOT NULL "
-                            "DO NOTHING",
+                            "INSERT INTO laps (session_id, stint_id, lap, time_s, client_lap_uid, air_temp, track_temp, humidity, wind_vel, wind_dir, "
+                            " fuel, fuel_start, fuel_used, wear_lf, wear_rf, wear_lr, wear_rr, temp_lf, temp_rf, temp_lr, temp_rr) "
+                            "VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21) "
+                            "ON CONFLICT (client_lap_uid) WHERE client_lap_uid IS NOT NULL DO NOTHING",
                             session_id, stint_id, int(msg["lap"]), float(msg["lastLapTime"]), msg.get("lapUid"),
                             msg.get("airTemp"), msg.get("trackTemp"), msg.get("humidity"),
-                            msg.get("windVel"), msg.get("windDir"))
+                            msg.get("windVel"), msg.get("windDir"),
+                            msg.get("fuel"), msg.get("fuel_start"), msg.get("fuel_used"),
+                            msg.get("wear_lf"), msg.get("wear_rf"), msg.get("wear_lr"), msg.get("wear_rr"),
+                            msg.get("temp_lf"), msg.get("temp_rf"), msg.get("temp_lr"), msg.get("temp_rr"))
+                elif t == "live":
+                    _live_ingest(uid, msg)
                 elif t == "lap_telemetry" and session_id is not None:
                     s = msg.get("samples") or {}
                     ch = ["speed","throttle","brake","clutch","steer","gear","rpm","lapdist",
@@ -200,7 +220,7 @@ async def ws_agent(ws: WebSocket, device_key: str):
                     async with pool.acquire() as c:
                         await c.execute(
                             f"INSERT INTO lap_telemetry ({','.join(cols)}) VALUES ({ph}) "
-                            "ON CONFLICT (session_id, lap_uid) DO NOTHING",
+                            "ON CONFLICT (lap_uid) DO NOTHING",
                             session_id, msg["lapUid"], *[s[k] for k in present])
                 elif t == "hb":
                     await pool.execute("UPDATE devices SET last_seen = now() WHERE id = $1", dev_id)
@@ -460,7 +480,8 @@ async def list_sessions(car_id: int, track_id: int, pilot: str | None = None, ui
 @app.get("/api/sessions/{session_id}/laps")
 async def list_laps(session_id: int, uid: str = Depends(uid_dep)):
     meta = await pool.fetchrow(
-        "SELECT s.id, s.user_id, s.session_type, s.started_at, c.name AS car, t.name AS track, "
+        "SELECT s.id, s.user_id, s.car_id, s.track_id, s.session_type, s.started_at, "
+        " c.name AS car, t.name AS track, "
         " s.air_temp, s.track_temp, s.humidity, s.wind_vel, s.wind_dir, s.track_usage "
         "FROM sessions s JOIN cars c ON c.id = s.car_id JOIN tracks t ON t.id = s.track_id "
         "WHERE s.id = $1", session_id)
@@ -468,6 +489,7 @@ async def list_laps(session_id: int, uid: str = Depends(uid_dep)):
         raise HTTPException(404)
     laps = await pool.fetch(
         "SELECT l.id, l.lap, l.time_s, l.air_temp, l.track_temp, l.humidity, l.wind_vel, l.wind_dir, l.stint_id, "
+        " l.fuel, l.fuel_used, l.wear_lf, l.wear_rf, l.wear_lr, l.wear_rr, "
         " (tel.id IS NOT NULL) AS has_telemetry "
         "FROM laps l LEFT JOIN lap_telemetry tel "
         "  ON tel.session_id = l.session_id AND tel.lap_uid = l.client_lap_uid "
@@ -480,11 +502,221 @@ async def list_laps(session_id: int, uid: str = Depends(uid_dep)):
     legacy = {"id": 0, "setup_name": None, "setup": {}, "laps": []}
     for l in laps:
         (by_stint.get(l["stint_id"]) or legacy)["laps"].append(
-            {k: l[k] for k in ("id", "lap", "time_s", "air_temp", "track_temp", "humidity", "wind_vel", "wind_dir", "has_telemetry")})
+            {k: l[k] for k in ("id", "lap", "time_s", "air_temp", "track_temp", "humidity", "wind_vel", "wind_dir",
+                               "fuel", "fuel_used", "wear_lf", "wear_rf", "wear_lr", "wear_rr", "has_telemetry")})
     out = ([legacy] if legacy["laps"] else []) + [s for s in by_stint.values() if s["laps"]]
     sess = {k: meta[k] for k in meta.keys() if k != "user_id"}
-    sess["pilot"] = await pilot_name_of(meta["user_id"]) if meta["user_id"] != uid else None
+    other = meta["user_id"] != uid
+    sess["pilot"] = await pilot_name_of(meta["user_id"]) if other else None
+    sess["owner"] = meta["user_id"] if other else None   # serve alla navigazione a ritroso
     return {"session": sess, "stints": out}
+
+
+
+# ====== PARAMETRI DI STRATEGIA RICAVATI DALL'ARCHIVIO ======
+# L'idea: invece di far digitare a mano consumo e degrado (come fanno tutti i calcolatori),
+# li MISURIAMO dai giri realmente percorsi dal pilota su quella pista con quell'auto.
+
+def _mediana(v):
+    v = sorted(v)
+    n = len(v)
+    if not n:
+        return None
+    return v[n // 2] if n % 2 else (v[n // 2 - 1] + v[n // 2]) / 2
+
+
+def _solve3(A, b):
+    """Risolve un sistema 3x3 (eliminazione di Gauss). Ritorna None se mal condizionato."""
+    M = [row[:] + [b[i]] for i, row in enumerate(A)]
+    for c in range(3):
+        p = max(range(c, 3), key=lambda r: abs(M[r][c]))
+        if abs(M[p][c]) < 1e-12:
+            return None
+        M[c], M[p] = M[p], M[c]
+        for r in range(3):
+            if r == c:
+                continue
+            f = M[r][c] / M[c][c]
+            for k in range(c, 4):
+                M[r][k] -= f * M[c][k]
+    return [M[i][3] / M[i][i] for i in range(3)]
+
+
+@app.get("/api/strategy/params")
+async def strategy_params(car_id: int, track_id: int, uid: str = Depends(uid_dep)):
+    """Ricava consumo, degrado gomme, tempo di riferimento e perdita ai box dai giri
+    realmente percorsi dall'utente con quell'auto su quella pista."""
+    rows = await pool.fetch(
+        "SELECT l.lap, l.time_s, l.fuel, l.fuel_used, l.stint_id, s.id AS sess "
+        "FROM laps l JOIN sessions s ON s.id = l.session_id "
+        "WHERE s.user_id = $1 AND s.car_id = $2 AND s.track_id = $3 "
+        "ORDER BY s.started_at, l.lap", uid, car_id, track_id)
+    out = {"laps_total": len(rows), "sessions": len(set(r["sess"] for r in rows)),
+           "base_time": None, "fuel_per_lap": None, "deg": None, "k_fuel": None,
+           "pit_loss": None, "fonte": {}}
+    if not rows:
+        return out
+
+    tempi = [r["time_s"] for r in rows if r["time_s"]]
+    med = _mediana(tempi)
+    # Scarto i giri anomali (entrata/uscita box, errori): oltre il 7% sopra la mediana
+    puliti = [r for r in rows if r["time_s"] and r["time_s"] <= med * 1.07]
+
+    # --- consumo per giro: mediana dei consumi misurati ---
+    consumi = [r["fuel_used"] for r in puliti if r["fuel_used"] and r["fuel_used"] > 0]
+    if len(consumi) >= 3:
+        out["fuel_per_lap"] = round(_mediana(consumi), 3)
+        out["fonte"]["fuel_per_lap"] = f"misurato su {len(consumi)} giri"
+
+    # --- raggruppo per stint per ricavare l'età gomme ---
+    stints = {}
+    for r in puliti:
+        stints.setdefault((r["sess"], r["stint_id"]), []).append(r)
+    campioni = []           # (tempo, carburante, età gomme)
+    for _, gs in stints.items():
+        if len(gs) < 3:
+            continue        # stint troppo corto per dire qualcosa
+        gs = sorted(gs, key=lambda x: x["lap"])
+        for eta, g in enumerate(gs):
+            campioni.append((g["time_s"], g["fuel"], eta))
+
+    # --- regressione: tempo = base + k_fuel*carburante + deg*eta_gomme ---
+    # Nota: dentro un singolo stint carburante ed età sono quasi perfettamente correlati
+    # (uno scende mentre l'altro sale), quindi da UNO stint non si possono separare.
+    # Con più stint partiti da carichi diversi il sistema diventa risolvibile.
+    con_fuel = [c for c in campioni if c[1] is not None]
+    fatto = False
+    if len(con_fuel) >= 8 and len(stints) >= 2:
+        n = len(con_fuel)
+        sf = sum(c[1] for c in con_fuel); sa = sum(c[2] for c in con_fuel)
+        sff = sum(c[1] * c[1] for c in con_fuel); saa = sum(c[2] * c[2] for c in con_fuel)
+        sfa = sum(c[1] * c[2] for c in con_fuel)
+        sy = sum(c[0] for c in con_fuel)
+        syf = sum(c[0] * c[1] for c in con_fuel); sya = sum(c[0] * c[2] for c in con_fuel)
+        sol = _solve3([[n, sf, sa], [sf, sff, sfa], [sa, sfa, saa]], [sy, syf, sya])
+        # accetto solo risultati fisicamente sensati
+        if sol and 0 < sol[1] < 0.3 and -0.05 < sol[2] < 2.0:
+            out["base_time"] = round(sol[0], 3)
+            out["k_fuel"] = round(sol[1], 4)
+            out["deg"] = round(max(0.0, sol[2]), 4)
+            out["fonte"]["deg"] = f"misurato su {len(stints)} stint ({len(con_fuel)} giri)"
+            out["fonte"]["k_fuel"] = "misurato insieme al degrado"
+            fatto = True
+    if not fatto and campioni:
+        # Ripiego: uso un effetto peso tipico e ricavo il degrado dalla pendenza osservata
+        K_TIPICO = 0.035     # secondi persi per litro a bordo
+        n = len(campioni)
+        sa = sum(c[2] for c in campioni); saa = sum(c[2] * c[2] for c in campioni)
+        sy = sum(c[0] for c in campioni); sya = sum(c[0] * c[2] for c in campioni)
+        den = n * saa - sa * sa
+        if den:
+            pend = (n * sya - sa * sy) / den          # pendenza netta osservata
+            base = (sy - pend * sa) / n
+            fpl = out["fuel_per_lap"] or 0
+            out["base_time"] = round(base, 3)
+            out["k_fuel"] = K_TIPICO
+            # la pendenza osservata è degrado MENO alleggerimento: la scompongo
+            out["deg"] = round(max(0.0, pend + K_TIPICO * fpl), 4)
+            out["fonte"]["deg"] = f"stimato su {len(stints)} stint (effetto peso non separabile)"
+            out["fonte"]["k_fuel"] = "valore tipico, non misurabile con questi dati"
+
+    # --- perdita ai box: confronto i giri di entrata/uscita con quelli normali ---
+    perdite = []
+    ordinati = sorted(rows, key=lambda r: (r["sess"], r["lap"]))
+    for i in range(1, len(ordinati)):
+        a, b = ordinati[i - 1], ordinati[i]
+        if a["sess"] == b["sess"] and a["stint_id"] != b["stint_id"] and a["time_s"] and b["time_s"]:
+            extra = (a["time_s"] - med) + (b["time_s"] - med)
+            if 5 < extra < 120:
+                perdite.append(extra)
+    if perdite:
+        out["pit_loss"] = round(_mediana(perdite), 1)
+        out["fonte"]["pit_loss"] = f"misurato su {len(perdite)} soste"
+    return out
+
+
+
+# ====== STATO DAL VIVO ======
+# Tenuto SOLO in memoria: a una fotografia al secondo, salvarlo nel database significherebbe
+# ~3600 righe l'ora per pilota, con costi e spazio fuori controllo per un dato che dopo pochi
+# secondi non serve più. Alla fine della sessione resta comunque tutto l'archivio dei giri.
+LIVE = {}                 # user_id -> stato corrente
+LIVE_TTL = 30             # dopo questi secondi senza aggiornamenti la sessione è considerata ferma
+
+
+def _live_ingest(uid, msg):
+    st = LIVE.get(uid)
+    if st is None or msg.get("sessione", {}).get("tipo") != st.get("sessione", {}).get("tipo"):
+        st = {"soste": {}, "visto": {}}
+        LIVE[uid] = st
+    # Storia delle soste dedotta: registro il passaggio "in pista -> ai box" di ogni auto.
+    # Serve a sapere da quanti giri ciascun avversario è sullo stesso treno di gomme.
+    for c in msg.get("cars", []):
+        i = str(c.get("i"))
+        prima = st["visto"].get(i, 0)
+        if c.get("pit") and not prima:
+            st["soste"].setdefault(i, []).append(c.get("l"))
+        st["visto"][i] = c.get("pit", 0)
+    st.update({k: msg[k] for k in ("ts", "me", "cars", "piloti", "sessione", "mia") if k in msg})
+    st["ricevuto"] = time.time()
+    # pulizia delle sessioni abbandonate, per non far crescere la memoria
+    if len(LIVE) > 200:
+        for k in [k for k, v in LIVE.items() if time.time() - v.get("ricevuto", 0) > 3600]:
+            LIVE.pop(k, None)
+
+
+@app.get("/api/live")
+async def live_state(pilot: str | None = None, uid: str = Depends(uid_dep)):
+    """Stato dal vivo proprio o di un pilota visibile (un compagno di team che segue la gara)."""
+    owner = await owner_or_404(uid, pilot)
+    st = LIVE.get(owner)
+    if not st:
+        return {"attivo": False, "motivo": "nessuna sessione in corso"}
+    eta = time.time() - st.get("ricevuto", 0)
+    if eta > LIVE_TTL:
+        return {"attivo": False, "motivo": "programma non collegato", "fermo_da": round(eta)}
+    return {"attivo": True, "eta": round(eta, 1), "soste": st.get("soste", {}),
+            **{k: st.get(k) for k in ("ts", "me", "cars", "piloti", "sessione", "mia")}}
+
+
+@app.get("/api/live/pilots")
+async def live_pilots(uid: str = Depends(uid_dep)):
+    """Chi sta guidando in questo momento fra i piloti che posso vedere."""
+    out = []
+    for altro, st in list(LIVE.items()):
+        if time.time() - st.get("ricevuto", 0) > LIVE_TTL:
+            continue
+        if altro != uid and not await can_view(uid, altro):
+            continue
+        out.append({"id": altro, "name": (await pilot_name_of(altro)) or "Pilota",
+                    "is_me": altro == uid,
+                    "sessione": (st.get("sessione") or {}).get("tipo")})
+    out.sort(key=lambda x: (not x["is_me"], x["name"].lower()))
+    return out
+
+
+
+@app.get("/api/track-outline")
+async def track_outline(name: str, pilot: str | None = None, uid: str = Depends(uid_dep)):
+    """Sagoma del tracciato ricavata dal GPS di un giro già in archivio.
+    Serve al Pitwall per disegnare la pista e collocarci sopra le auto: iRacing fornisce la
+    posizione degli avversari come frazione di giro, non come coordinate."""
+    owner = await owner_or_404(uid, pilot)
+    row = await pool.fetchrow(
+        "SELECT tel.lat, tel.lon, tel.lapdist FROM lap_telemetry tel "
+        "JOIN sessions s ON s.id = tel.session_id "
+        "JOIN tracks t ON t.id = s.track_id AND lower(t.name) = lower($2) "
+        "WHERE s.user_id = $1 AND tel.lat IS NOT NULL AND array_length(tel.lat,1) > 50 "
+        "ORDER BY tel.id DESC LIMIT 1", owner, name)
+    if not row or not row["lat"]:
+        return {"disponibile": False}
+    lat, lon, dist = list(row["lat"]), list(row["lon"]), list(row["lapdist"])
+    n = len(lat)
+    passo = max(1, n // 240)
+    pts = [{"d": round(dist[i], 4), "lat": lat[i], "lon": lon[i]} for i in range(0, n, passo)]
+    if len(pts) < 20 or (max(p["lat"] for p in pts) - min(p["lat"] for p in pts)) < 1e-6:
+        return {"disponibile": False}
+    return {"disponibile": True, "punti": pts}
 
 
 @app.delete("/api/cars/{car_id}")
@@ -521,7 +753,7 @@ async def delete_session(session_id: int, uid: str = Depends(uid_dep)):
 @app.get("/api/laps/{lap_id}/telemetry")
 async def lap_telemetry(lap_id: int, uid: str = Depends(uid_dep)):
     meta = await pool.fetchrow(
-        "SELECT l.id, l.lap, l.time_s, l.client_lap_uid, l.session_id, s.user_id, s.track_id, "
+        "SELECT l.id, l.lap, l.time_s, l.client_lap_uid, l.session_id, s.user_id, s.track_id, s.car_id, "
         " c.name AS car, t.name AS track "
         "FROM laps l JOIN sessions s ON s.id = l.session_id "
         "JOIN cars c ON c.id = s.car_id JOIN tracks t ON t.id = s.track_id "
@@ -534,9 +766,12 @@ async def lap_telemetry(lap_id: int, uid: str = Depends(uid_dep)):
         "FROM lap_telemetry WHERE session_id = $1 AND lap_uid = $2", meta["session_id"], meta["client_lap_uid"])
     if not tel:
         raise HTTPException(404, "Telemetria non disponibile per questo giro")
+    other = meta["user_id"] != uid
     return {"lap": {"lap": meta["lap"], "time_s": meta["time_s"], "car": meta["car"], "track": meta["track"],
-                    "track_id": meta["track_id"],
-                    "pilot": (await pilot_name_of(meta["user_id"])) if meta["user_id"] != uid else None},
+                    "track_id": meta["track_id"], "car_id": meta["car_id"],
+                    "session_id": meta["session_id"],
+                    "pilot": (await pilot_name_of(meta["user_id"])) if other else None,
+                    "owner": meta["user_id"] if other else None},
             "channels": {k: list(tel[k]) if tel[k] is not None else [] for k in tel.keys()}}
 
 
