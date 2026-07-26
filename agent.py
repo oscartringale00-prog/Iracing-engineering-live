@@ -107,8 +107,15 @@ def load_config():
         cfg.read(CONFIG_PATH)
     if not cfg.has_section("agent"):
         cfg.add_section("agent")
+    modificato = False
     if not cfg["agent"].get("backend"):
         cfg["agent"]["backend"] = DEFAULT_BACKEND
+        modificato = True
+    # La voce viene scritta nel file così l'utente la vede e può cambiarla senza doverla indovinare
+    if "alta_frequenza" not in cfg["agent"]:
+        cfg["agent"]["alta_frequenza"] = "si"
+        modificato = True
+    if modificato:
         save_config(cfg)
     return cfg
 
