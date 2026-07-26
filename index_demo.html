@@ -367,7 +367,7 @@ const DEMO = (() => {
   function makeTelemetry(seed, style){
     style = style || 0;
     const n = 800, ch = {speed:[],throttle:[],brake:[],clutch:[],steer:[],gear:[],rpm:[],lapdist:[],
-      lataccel:[],lonaccel:[],vertaccel:[],rh_lf:[],rh_rf:[],rh_lr:[],rh_rr:[],
+      lataccel:[],lonaccel:[],vertaccel:[],yawrate:[],rh_lf:[],rh_rf:[],rh_lr:[],rh_rr:[],
       shock_lf:[],shock_rf:[],shock_lr:[],shock_rr:[],lat:[],lon:[]};
     const rnd = a => Math.sin(seed*12.9898 + a*4.1414)*0.5;
     for (let i=0;i<n;i++){
@@ -393,6 +393,7 @@ const DEMO = (() => {
       ch.clutch.push(0); ch.steer.push(+steer.toFixed(4)); ch.gear.push(gear); ch.rpm.push(Math.round(rpm));
       ch.lapdist.push(+d.toFixed(5));
       ch.lataccel.push(+latG.toFixed(3)); ch.lonaccel.push(+lonG.toFixed(3));
+      ch.yawrate.push(+(latG/Math.max(5,speed)).toFixed(4));
       ch.vertaccel.push(+(9.81 + 1.2*Math.sin(6*a) + 0.8*brk).toFixed(3));
       ch.rh_lf.push(+(30 - 6*brk + 2*Math.sin(3*a)).toFixed(2));
       ch.rh_rf.push(+(30 - 6*brk + 2*Math.sin(3*a+0.3)).toFixed(2));
@@ -1524,20 +1525,20 @@ async function viewLaps(sessionId){
 /* ---------- Vista telemetria giro ---------- */
 // Catalogo grafici: id, etichetta, lista di serie [chiave, colore, nomeLegenda], trasformazione valore
 const TEL_CATALOG = [
-  ["speed",   "Velocità (km/h)",           [["speed","#e10600"]],                         v=>v*3.6,        v=>Math.round(v)+" km/h"],
-  ["throttle","Acceleratore (%)",          [["throttle","#35d07f"]],                      v=>v*100,        v=>Math.round(v)+"%"],
-  ["brake",   "Freno (%)",                 [["brake","#f2b63d"]],                         v=>v*100,        v=>Math.round(v)+"%"],
-  ["clutch",  "Frizione (%)",              [["clutch","#c07bff"]],                        v=>v*100,        v=>Math.round(v)+"%"],
-  ["gear",    "Marcia",                    [["gear","#8ab4ff"]],                          v=>v,            v=>String(Math.round(v))],
-  ["rpm",     "RPM",                       [["rpm","#ff8a3d"]],                            v=>v,            v=>Math.round(v)+" rpm"],
-  ["steer",   "Sterzo (°)",                [["steer","#c9c9d1"]],                         v=>v*180/Math.PI, v=>v.toFixed(0)+"°"],
-  ["lataccel","G laterale",                [["lataccel","#e10600"]],                      v=>v/9.81,       v=>v.toFixed(2)+" G"],
-  ["lonaccel","G longitudinale",           [["lonaccel","#35d07f"]],                      v=>v/9.81,       v=>v.toFixed(2)+" G"],
-  ["vertaccel","G verticale",              [["vertaccel","#8ab4ff"]],                     v=>v/9.81,       v=>v.toFixed(2)+" G"],
-  ["rh_front","Altezze anteriori (mm)",    [["rh_lf","#e10600","LF"],["rh_rf","#8ab4ff","RF"]], v=>v,      v=>v.toFixed(1)+" mm"],
-  ["rh_rear", "Altezze posteriori (mm)",   [["rh_lr","#e10600","LR"],["rh_rr","#8ab4ff","RR"]], v=>v,      v=>v.toFixed(1)+" mm"],
-  ["sh_front","Ammortizzatori ant. (m)",   [["shock_lf","#e10600","LF"],["shock_rf","#8ab4ff","RF"]], v=>v, v=>v.toFixed(4)+" m"],
-  ["sh_rear", "Ammortizzatori post. (m)",  [["shock_lr","#e10600","LR"],["shock_rr","#8ab4ff","RR"]], v=>v, v=>v.toFixed(4)+" m"],
+  ["speed",   "Velocità (km/h)",           [["speed","#e10600"]],                         v=>v*3.6,        v=>Math.round(v)+" km/h",  "zero"],
+  ["throttle","Acceleratore (%)",          [["throttle","#35d07f"]],                      v=>v*100,        v=>Math.round(v)+"%",      "zero"],
+  ["brake",   "Freno (%)",                 [["brake","#f2b63d"]],                         v=>v*100,        v=>Math.round(v)+"%",      "zero"],
+  ["clutch",  "Frizione (%)",              [["clutch","#c07bff"]],                        v=>v*100,        v=>Math.round(v)+"%",      "zero"],
+  ["gear",    "Marcia",                    [["gear","#8ab4ff"]],                          v=>v,            v=>String(Math.round(v)),  "zero"],
+  ["rpm",     "RPM",                       [["rpm","#ff8a3d"]],                            v=>v,            v=>Math.round(v)+" rpm",   "zero"],
+  ["steer",   "Sterzo (°)",                [["steer","#c9c9d1"]],                         v=>v*180/Math.PI, v=>v.toFixed(1)+"°",     "centro"],
+  ["lataccel","G laterale",                [["lataccel","#e10600"]],                      v=>v/9.81,       v=>v.toFixed(2)+" G",      "centro"],
+  ["lonaccel","G longitudinale",           [["lonaccel","#35d07f"]],                      v=>v/9.81,       v=>v.toFixed(2)+" G",      "centro"],
+  ["vertaccel","G verticale",              [["vertaccel","#8ab4ff"]],                     v=>v/9.81,       v=>v.toFixed(2)+" G",      "centro"],
+  ["rh_front","Altezze anteriori (mm)",    [["rh_lf","#e10600","LF"],["rh_rf","#8ab4ff","RF"]], v=>v,      v=>v.toFixed(1)+" mm",     "zero"],
+  ["rh_rear", "Altezze posteriori (mm)",   [["rh_lr","#e10600","LR"],["rh_rr","#8ab4ff","RR"]], v=>v,      v=>v.toFixed(1)+" mm",     "zero"],
+  ["sh_front","Ammortizzatori ant. (m)",   [["shock_lf","#e10600","LF"],["shock_rf","#8ab4ff","RF"]], v=>v, v=>v.toFixed(4)+" m",     "zero"],
+  ["sh_rear", "Ammortizzatori post. (m)",  [["shock_lr","#e10600","LR"],["shock_rr","#8ab4ff","RR"]], v=>v, v=>v.toFixed(4)+" m",     "zero"],
 ];
 const TEL_DEFAULT = ["speed","throttle","brake","gear","steer"];
 
@@ -1618,8 +1619,10 @@ async function viewLapTelemetry(lapId){
   // In curva l'accelerazione laterale è legata al raggio: integrandola lungo il giro si
   // ottiene la traiettoria. La lunghezza della pista si stima da velocità media × tempo sul giro.
   function ricostruisciTracciato(l){
-    const sp = l.ch.speed, la = l.ch.lataccel, di = l.ch.lapdist;
-    if (!sp || !la || !di || !l.time_s) return null;
+    const sp = l.ch.speed, la = l.ch.lataccel, di = l.ch.lapdist, yr = l.ch.yawrate;
+    if (!sp || !di || !l.time_s) return null;
+    const usaYaw = yr && yr.length === sp.length && yr.some(v => v != null && Math.abs(v) > 1e-4);
+    if (!usaYaw && !la) return null;
     const n = sp.length;
     let somma = 0, validi = 0;
     for (let i=0;i<n;i++) if (sp[i] != null){ somma += sp[i]; validi++; }
@@ -1632,8 +1635,10 @@ async function viewLapTelemetry(lapId){
       let dd = i === 0 ? (di[1]-di[0]) : (di[i]-di[i-1]);
       if (dd < -0.5) dd += 1;
       const ds = dd * L;
-      if (v != null && a != null && v > 1 && isFinite(ds) && ds > 0){
-        psi += (a * ds) / (v * v);
+      if (v != null && v > 1 && isFinite(ds) && ds > 0){
+        // con YawRate uso la rotazione misurata (dt = spazio/velocità), altrimenti la ricavo
+        // dall'accelerazione laterale: in curva a_lat = v x (rotazione al secondo)
+        psi += usaYaw && yr[i] != null ? yr[i] * (ds / v) : ((a != null ? a : 0) * ds) / (v * v);
         x += Math.cos(psi) * ds;
         y += Math.sin(psi) * ds;
       }
@@ -1865,8 +1870,19 @@ async function viewLapTelemetry(lapId){
       }).filter(x => x.seriesVals.length);
       if (!perLap.length){ cv.hidden = true; na.hidden = false; return null; }
       const ctx = setup(cv, H);
-      const allVals = perLap.flatMap(p => p.seriesVals.flatMap(s => s.vals));
-      return {cv, ctx, perLap, fmt:g[4], min:Math.min(...allVals), max:Math.max(...allVals)};
+      const allVals = perLap.flatMap(p => p.seriesVals.flatMap(s => s.vals)).filter(v => v != null && isFinite(v));
+      let mn = Math.min(...allVals), mx = Math.max(...allVals);
+      const modo = g[5] || "auto";
+      if (modo === "zero"){
+        // lo zero è sempre presente: si vede subito quanto si è lontani da fondo scala
+        mn = Math.min(0, mn); mx = Math.max(0, mx);
+      } else if (modo === "centro"){
+        // zero al centro: si legge a colpo d'occhio la simmetria (destra/sinistra, accelera/frena)
+        const e = Math.max(Math.abs(mn), Math.abs(mx)) || 1;
+        mn = -e; mx = e;
+      }
+      if (mx - mn < 1e-9){ mx = mn + 1; }        // valore costante: evita una scala degenere
+      return {cv, ctx, perLap, fmt:g[4], min:mn, max:mx, modo};
     }).filter(Boolean);
 
     attachInteraction();
@@ -1878,6 +1894,11 @@ async function viewLapTelemetry(lapId){
     ctx.clearRect(0,0,w,h);
     const rng = (g.max - g.min) || 1;
     const y = v => h - pad - (v - g.min)/rng*(h - 2*pad);
+    if (g.modo === "centro" || (g.modo === "zero" && g.min < 0)){
+      const y0 = y(0);
+      ctx.strokeStyle = "rgba(255,255,255,.18)"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0, y0); ctx.lineTo(w, y0); ctx.stroke();
+    }
     const span = (zx1 - zx0) || 1;
     const mrg = span*0.02;
     g.perLap.forEach(p => {

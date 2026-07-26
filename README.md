@@ -344,3 +344,21 @@ Su GitHub: agent.py, server.py, index.html.
    Verificato su forme note: errore 0,1% sul diametro di un cerchio, e distingue correttamente un
    ovale da un cerchio. La forma viene chiusa distribuendo l'errore di deriva.
 ⚠️ agent.py modificato -> ricostruire l'exe. Su GitHub: agent.py, index.html.
+
+## v25 — Assi con lo zero, sterzo più fine, diagnostica completa
+1) ASSI VERTICALI. Velocità, acceleratore, freno, frizione, marcia, RPM, altezze e ammortizzatori
+   includono SEMPRE lo zero. Forze G e sterzo hanno lo zero AL CENTRO (scala simmetrica), con una
+   linea di riferimento sullo zero. Motivo pratico: su un ovale acceleratore (100%), freno (0) e
+   marcia sono costanti, e con la scala automatica venivano disegnati come righe piatte sul bordo,
+   dando l'impressione che il grafico fosse rotto.
+2) STERZO. Riportato a 4 decimali: a 3 (scelti per alleggerire i dati) la risoluzione era 0,06° e
+   sugli ovali, dove si sterza di pochi gradi, i gradini erano visibili a occhio. Era questo a dare
+   l'impressione di "pochi campioni". Il risparmio era irrisorio.
+3) FREQUENZA nel registro: ogni giro riporta ora quanti campioni al secondo sono stati raccolti,
+   così la domanda "è troppo bassa?" ha una risposta misurata invece che a sensazione.
+4) YawRate aggiunto ai canali: se disponibile, la forma del tracciato viene ricostruita dalla
+   rotazione MISURATA invece che dedotta dall'accelerazione laterale (più preciso).
+5) ELENCO COMPLETO delle variabili iRacing scritto nel registro all'avvio, con evidenza di quelle
+   utili a posizione e assetto. Serve a stabilire con certezza se le coordinate GPS esistono su
+   quel PC e con quale nome, invece di tirare a indovinare.
+⚠️ agent.py modificato -> ricostruire l'exe. Su GitHub: agent.py, index.html.

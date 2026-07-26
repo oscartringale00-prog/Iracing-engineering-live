@@ -36,7 +36,7 @@ const DEMO = (() => {
   function makeTelemetry(seed, style){
     style = style || 0;
     const n = 800, ch = {speed:[],throttle:[],brake:[],clutch:[],steer:[],gear:[],rpm:[],lapdist:[],
-      lataccel:[],lonaccel:[],vertaccel:[],rh_lf:[],rh_rf:[],rh_lr:[],rh_rr:[],
+      lataccel:[],lonaccel:[],vertaccel:[],yawrate:[],rh_lf:[],rh_rf:[],rh_lr:[],rh_rr:[],
       shock_lf:[],shock_rf:[],shock_lr:[],shock_rr:[],lat:[],lon:[]};
     const rnd = a => Math.sin(seed*12.9898 + a*4.1414)*0.5;
     for (let i=0;i<n;i++){
@@ -62,6 +62,7 @@ const DEMO = (() => {
       ch.clutch.push(0); ch.steer.push(+steer.toFixed(4)); ch.gear.push(gear); ch.rpm.push(Math.round(rpm));
       ch.lapdist.push(+d.toFixed(5));
       ch.lataccel.push(+latG.toFixed(3)); ch.lonaccel.push(+lonG.toFixed(3));
+      ch.yawrate.push(+(latG/Math.max(5,speed)).toFixed(4));
       ch.vertaccel.push(+(9.81 + 1.2*Math.sin(6*a) + 0.8*brk).toFixed(3));
       ch.rh_lf.push(+(30 - 6*brk + 2*Math.sin(3*a)).toFixed(2));
       ch.rh_rf.push(+(30 - 6*brk + 2*Math.sin(3*a+0.3)).toFixed(2));

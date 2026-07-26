@@ -53,12 +53,13 @@ TELEMETRY_CHANNELS = [
     ("Throttle", "throttle", 3),
     ("Brake", "brake", 3),
     ("Clutch", "clutch", 2),
-    ("SteeringWheelAngle", "steer", 3),     # radianti: 0,001 rad = 0,06°
+    ("SteeringWheelAngle", "steer", 4),     # 4 decimali: a 3 i gradini si vedevano sugli ovali
     ("Gear", "gear", 0),
     ("RPM", "rpm", 0),
     ("LapDistPct", "lapdist", 5),           # invariato: serve ad allineare i giri nel confronto
     ("LatAccel", "lataccel", 2),
     (("LongAccel", "LonAccel"), "lonaccel", 2),
+    (("YawRate", "YawRateST"), "yawrate", 4),      # per ricostruire la forma del tracciato
     ("VertAccel", "vertaccel", 2),
     (("LFrideHeight", "LFRideHeight", "CFrideHeight"), "rh_lf", 1),   # non tutte le auto lo espongono
     (("RFrideHeight", "RFRideHeight"), "rh_rf", 1),
@@ -285,6 +286,7 @@ class IracingSource:
                     print("  -> manca il carburante: il calcolatore di strategia non potra' misurare i consumi.")
             else:
                 print("Tutti i canali telemetrici sono disponibili (mappa inclusa).")
+            self._dump_variabili()
 
         # Fotografia della gara a bassa frequenza (una volta al secondo): serve al Pitwall
         # e non deve mai disturbare la telemetria né il ciclo di lettura.
@@ -360,7 +362,10 @@ class IracingSource:
                                        "lapUid": p["uid"], **wx, **strategia}))
                 self.last_sent_time = float(last_time)
                 if p["buf"] and len(p["buf"]["lapdist"]) > 10:
-                    events.append(("telemetry", {"lapUid": p["uid"], "samples": _riduci(p["buf"])}))
+                    n_camp = len(p["buf"]["lapdist"])
+                    p["hz"] = round(n_camp / float(last_time), 1) if last_time else None
+                    events.append(("telemetry", {"lapUid": p["uid"], "samples": _riduci(p["buf"]),
+                                                 "hz": p["hz"]}))
                 if self.pending_stint:
                     self.stint = self.pending_stint
                     self.pending_stint = None
@@ -430,6 +435,31 @@ class IracingSource:
             },
             "mia": {k: v for k, v in (self._last_strat or {}).items() if v is not None},
         }
+
+    def _dump_variabili(self):
+        """Scrive nel registro l'elenco di TUTTE le variabili che iRacing espone su questo PC.
+        Serve a capire con certezza quali dati sono disponibili (per esempio le coordinate GPS),
+        invece di tirare a indovinare sui nomi."""
+        try:
+            nomi = []
+            for attr in ("_var_headers_dict", "var_headers_dict", "_var_headers"):
+                v = getattr(self.ir, attr, None)
+                if isinstance(v, dict):
+                    nomi = sorted(v.keys()); break
+                if isinstance(v, (list, tuple)):
+                    nomi = sorted(getattr(h, "name", str(h)) for h in v); break
+            if not nomi:
+                log("Elenco variabili non disponibile in questa versione di pyirsdk.")
+                return
+            log(f"iRacing espone {len(nomi)} variabili. Elenco completo:")
+            for i in range(0, len(nomi), 12):
+                log("   " + ", ".join(nomi[i:i+12]))
+            interessanti = [n for n in nomi if any(k in n.lower()
+                            for k in ("lat", "lon", "yaw", "pos", "velocity", "ride", "gps"))]
+            if interessanti:
+                log("Variabili utili a posizione e assetto: " + ", ".join(interessanti))
+        except Exception as e:
+            log("Impossibile elencare le variabili", e)
 
     def _first_var(self, nomi):
         """iRacing chiama alcune variabili in modi diversi a seconda della versione e dell'auto:
@@ -824,7 +854,9 @@ def run():
                     elif kind == "telemetry":
                         n = len(data["samples"]["lapdist"])
                         if link.send({"type": "lap_telemetry", **data}):
-                            log(f"  telemetria giro in invio ({n} campioni)")
+                            hz = data.get("hz")
+                            log(f"  telemetria giro in invio ({n} campioni"
+                                + (f", {hz} al secondo)" if hz else ")"))
                         else:
                             log("  ATTENZIONE: connessione lenta, telemetria di questo giro non inviata")
                     else:
