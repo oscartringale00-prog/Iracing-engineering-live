@@ -1,4 +1,4 @@
-('C:\\Users\\oscar\\Downloads\\iracing-telemetry-v4_4\\iracing-live\\build\\iRacingLive\\PYZ-00.pyz',
+('C:\\Users\\oscar\\Downloads\\iracing-telemetry-v4_5\\iracing-live\\build\\iRacingLive\\PYZ-00.pyz',
  [('__future__',
    'C:\\Users\\oscar\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\__future__.py',
    'PYMODULE'),

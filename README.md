@@ -568,3 +568,24 @@ e 6600 campioni; messaggi distinti per errore di programma e di rete.
 AVVISO ai posteri: le sostituzioni di blocchi ampi possono cancellare righe adiacenti. Serve una
 verifica automatica dopo ogni modifica, non solo il controllo di sintassi.
 ⚠️ agent.py modificato -> ricostruire l exe. Su GitHub: agent.py.
+
+## v38 — Pitwall fluido: previsione del movimento e aggiornamento sul posto
+PROBLEMA 1 (scatti): l'agente manda una fotografia della gara una volta al secondo e la mappa
+disegnava solo quelle, quindi i pallini restavano fermi e poi saltavano.
+SOLUZIONE: si PREVEDE dove si trova ogni auto in ogni istante usando il suo ritmo, e si ridisegna
+a ogni fotogramma (~60 al secondo). All'arrivo della fotografia vera lo scarto viene riassorbito
+gradualmente invece di saltare. Le auto ai box restano ferme, come devono.
+Verificato: salto massimo fra due fotogrammi 0,177% del giro, impercettibile.
+Anche i distacchi seguono le posizioni previste, quindi scorrono invece di scattare.
+PROBLEMA 2 (piu' grave): ogni secondo veniva ricostruito da zero tutto il contenuto della pagina.
+Da qui i menu che si richiudevano, lo scorrimento che tornava in cima e soprattutto
+l'impossibilita' di trascinare una colonna, perche' a meta' trascinamento la tabella non esisteva
+piu'. Era un difetto di progettazione.
+SOLUZIONE: se colonne, ordinamento e insieme delle auto non cambiano, la tabella NON viene
+ricostruita: si aggiornano solo i valori dentro le celle, che ora hanno un identificativo.
+In piu' l'aggiornamento viene RIMANDATO mentre l'utente sta interagendo (menu aperto, colonna in
+movimento, cursore sulla tabella, campo in modifica).
+PROBLEMA 3: si aggiornava tutto ogni secondo, anche cio' che cambia solo a fine giro. Ora ogni
+parte ha il proprio ritmo: mappa ~60 volte al secondo (prevista), classifica ogni secondo
+(aggiornata sul posto), analisi giri e strategia solo quando qualcuno completa un giro.
+✅ Nessun terminale: solo index.html. Agente invariato.

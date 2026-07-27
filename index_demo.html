@@ -1311,7 +1311,7 @@ function ricostruisciTracciato(l){
 let livePoll = null, liveOutline = null, liveTrack = null, livePilot = null;
 let liveIoId = null, liveSel = [], liveParams = null;
 function chiSonoIo(id){ return id === liveIoId; }
-function fermaLive(){ clearInterval(livePoll); livePoll = null; }
+function fermaLive(){ clearInterval(livePoll); livePoll = null; fermaRaf(); liveDati = null; }
 
 // Colori per classe: nelle gare multiclasse serve distinguere a colpo d'occhio chi sta arrivando
 const CLASSE_COL = ["#e10600","#8ab4ff","#35d07f","#f2b63d","#c07bff","#ff8a3d"];
@@ -1358,7 +1358,9 @@ async function avviaLive(){
   if (sel) sel.onchange = () => { livePilot = sel.value; liveOutline = null; liveTrack = null; liveSel = []; aggiornaLive(); };
   host.querySelectorAll("[data-lv]").forEach(b => b.onclick = () => {
     host.querySelectorAll("[data-lv]").forEach(x => x.classList.toggle("on", x===b));
-    lvTab = b.dataset.lv; aggiornaLive();
+    lvTab = b.dataset.lv;
+    const bd = document.getElementById("lvbody"); if (bd) delete bd.dataset.pronta;
+    aggiornaLive(true);
   });
   await aggiornaLive();
   livePoll = setInterval(() => { if (!liveInPausa) aggiornaLive(); }, 1000);
@@ -1366,9 +1368,14 @@ async function avviaLive(){
 let lvTab = "timing";
 let liveInPausa = false;   // congela l'aggiornamento per leggere con calma
 
-async function aggiornaLive(){
+let ultimoGiroVisto = null;     // per capire quando serve davvero rifare le schede lente
+
+async function aggiornaLive(forzato){
   const body = document.getElementById("lvbody");
   if (!body) { fermaLive(); return; }
+  // Se l'utente sta interagendo, l'aggiornamento aspetta: un secondo di ritardo non cambia
+  // nulla, ma evita che menu e trascinamenti vengano interrotti.
+  if (!forzato && interazioneInCorso()) return;
   const mio = chiSonoIo(livePilot);
   let d;
   try { d = await api("live" + (mio ? "" : `?pilot=${encodeURIComponent(livePilot)}`)); }
@@ -1414,10 +1421,18 @@ async function aggiornaLive(){
   const ordinate = cars.slice().sort((a,b)=>(a.p||99)-(b.p||99));
   disegnaHUD(d, ordinate, nomi, der, S);
 
+  liveDati = d; liveT0 = performance.now();
+  if (!rafId) avviaRaf();
+
+  // Ritmi diversi: la classifica ogni secondo, le schede lente solo quando finisce un giro.
+  const firmaGiri = (d.cars||[]).map(c=>c.l).join(",");
+  const giroCambiato = firmaGiri !== ultimoGiroVisto;
+  ultimoGiroVisto = firmaGiri;
+
   if (lvTab === "timing") renderTiming(body, d, ordinate, nomi, der);
-  else if (lvTab === "strategia") renderStrategia(body, d, ordinate, der);
+  else if (lvTab === "strategia"){ if (giroCambiato || forzato || !body.dataset.pronta){ renderStrategia(body, d, ordinate, der); body.dataset.pronta="1"; } }
   else if (lvTab === "meteo") renderMeteo(body, S);
-  else renderStorico(body, d, ordinate, nomi, der);
+  else { if (giroCambiato || forzato || !body.dataset.pronta){ renderStorico(body, d, ordinate, nomi, der); body.dataset.pronta="1"; } }
 }
 
 /* ---- Torre di controllo: minimappa, meteo, ghost car ---- */
@@ -1438,7 +1453,7 @@ function disegnaHUD(d, ordinate, nomi, der, S){
   const g = document.getElementById("ghost");
   const mia = ordinate.find(c=>c.i===me);
   const perdita = (liveParams && liveParams.pit_loss) || 30;
-  let ghostD = null;
+  ghostD = null;
   if (mia && g){
     const tot = c => (c.l||0) + (c.d||0);
     const mioDopo = tot(mia) + 0.02;              // il tratto percorso in corsia box
@@ -1459,12 +1474,9 @@ function disegnaHUD(d, ordinate, nomi, der, S){
       <div class="ghpos">P${posDopo}<span>${mia.p&&posDopo>mia.p?` (${posDopo-mia.p} in meno)`:mia.p&&posDopo<mia.p?` (${mia.p-posDopo} in più)`:""}</span></div>
       <div class="ghtra">${sopra?`dietro a <b>${esc((nomi[sopra.c.i]||{}).n||"?")}</b>`:"in testa"}${sotto?`<br>davanti a <b>${esc((nomi[sotto.c.i]||{}).n||"?")}</b>`:""}</div>
       <div class="ghnote">perdita stimata ${perdita.toFixed(0)} s</div>`;
-  } else if (g) g.innerHTML = "";
+  } else if (g){ g.innerHTML = ""; ghostD = null; }
 
-  if (liveOutline && liveOutline.disponibile) disegnaMappa(ordinate, nomi, me, ghostD);
-  else disegnaBarra(ordinate, nomi, me, ghostD);
-  ridimensionabile(document.querySelector(".hudmap"), "hud_mappa",
-    () => { if (liveOutline && liveOutline.disponibile) disegnaMappa(ordinate, nomi, me, ghostD); });
+  ridimensionabile(document.querySelector(".hudmap"), "hud_mappa");
 }
 const frecciaVento = rad => {
   const dirs = ["↑N","↗NE","→E","↘SE","↓S","↙SO","←O","↖NO"];
@@ -1522,6 +1534,83 @@ function disegnaBarra(cars, nomi, meIdx, ghostD){
   }).join("") + (ghostD!=null?`<span class="lvghost" style="left:${(ghostD*100).toFixed(2)}%">◌</span>`:"");
 }
 
+
+
+/* ---------- Movimento fluido: previsione fra un aggiornamento e l'altro ----------
+   L'agente manda una fotografia della gara una volta al secondo. Disegnare solo quelle
+   produce uno scatto ogni secondo. Qui invece si PREVEDE dove si trova ogni auto in ogni
+   istante, usando il suo ritmo, e si ridisegna a ogni fotogramma; quando arriva la
+   fotografia vera la posizione viene corretta scivolando, non saltando. */
+let liveDati = null, liveT0 = 0, rafId = null;
+const mostrata = {};        // posizione attualmente disegnata per ogni auto
+const correzione = {};      // scarto da riassorbire gradualmente
+
+function previste(){
+  if (!liveDati) return [];
+  const dt = (performance.now() - liveT0) / 1000;
+  return (liveDati.cars || []).map(c => {
+    const k = String(c.i);
+    let d;
+    if (c.pit || !c.lt || c.lt <= 0){
+      d = c.d;                                   // fermo ai box: nessuna previsione
+    } else {
+      d = (c.d + dt / c.lt) % 1;                 // avanza al proprio ritmo
+    }
+    if (mostrata[k] == null) mostrata[k] = d;
+    // riassorbo lo scarto in modo continuo invece di saltare alla nuova posizione
+    let diff = d - mostrata[k];
+    if (diff > 0.5) diff -= 1; else if (diff < -0.5) diff += 1;
+    mostrata[k] = (mostrata[k] + diff * 0.18 + 1) % 1;
+    return {...c, d: mostrata[k], dReale: c.d};
+  });
+}
+function fermaRaf(){ if (rafId) cancelAnimationFrame(rafId); rafId = null; }
+function avviaRaf(){
+  fermaRaf();
+  const passo = () => {
+    if (!liveDati) { rafId = requestAnimationFrame(passo); return; }
+    const cars = previste();
+    const nomi = {}; (liveDati.piloti||[]).forEach(p => nomi[p.i] = p);
+    if (liveOutline && liveOutline.disponibile) disegnaMappa(cars, nomi, liveDati.me, ghostD);
+    else disegnaBarra(cars, nomi, liveDati.me, ghostD);
+    aggiornaDistacchiFluidi(cars);
+    rafId = requestAnimationFrame(passo);
+  };
+  rafId = requestAnimationFrame(passo);
+}
+let ghostD = null;
+
+// I distacchi seguono le posizioni previste, cosi' scorrono invece di scattare
+function aggiornaDistacchiFluidi(cars){
+  if (!liveDati || lvTab !== "timing") return;
+  const perId = {}; cars.forEach(c => perId[c.i] = c);
+  document.querySelectorAll("[data-gapcl]").forEach(el => {
+    const c = perId[+el.dataset.gapcl], cap = perId[+el.dataset.cap];
+    if (!c || !cap) return;
+    if (c === cap){ el.textContent = "leader"; return; }
+    const g = (cap.l + cap.d) - (c.l + c.d), rif = cap.lt || c.lt;
+    el.textContent = Math.abs(g) >= 1 ? `+${Math.trunc(Math.abs(g))} giri`
+                   : rif ? `+${(Math.abs(g)*rif).toFixed(1)}` : "—";
+  });
+  document.querySelectorAll("[data-gapprec]").forEach(el => {
+    const c = perId[+el.dataset.gapprec], pr = perId[+el.dataset.prec];
+    if (!c || !pr) { el.textContent = "—"; return; }
+    const g = (pr.l + pr.d) - (c.l + c.d), rif = pr.lt || c.lt;
+    el.textContent = Math.abs(g) >= 1 ? `+${Math.trunc(Math.abs(g))} giri`
+                   : rif ? `+${(Math.abs(g)*rif).toFixed(1)}` : "—";
+  });
+}
+
+/* Aggiornamento rimandato mentre l'utente sta interagendo: senza questo, un menu aperto si
+   richiude e una colonna in movimento sparisce sotto le dita a ogni aggiornamento. */
+function interazioneInCorso(){
+  if (document.querySelector(".chanmenu:not([hidden])")) return true;   // un menu e' aperto
+  if (document.querySelector("th.trascino")) return true;               // colonna in movimento
+  if (document.activeElement && ["INPUT","SELECT","TEXTAREA"].includes(document.activeElement.tagName)) return true;
+  const t = document.getElementById("timbox");
+  if (t && t.matches(":hover") && lvTab === "timing") return true;      // mouse sulla tabella
+  return false;
+}
 
 /* ---- Scheda 1: Overview & Timing ---- */
 let liveClassi = null;
@@ -1600,28 +1689,62 @@ function renderTiming(body, d, ordinate, nomi, der){
   const cols = TAB.attive(st, COL_TIMING);
   const mostrate = TAB.ordina(righe, st, COL_TIMING);
 
-  const cella = (col, r) => {
-    switch(col.k){
-      case "sel":    return `<td><input type="checkbox" class="lvchk" data-car="${r.c.i}" ${liveSel.includes(r.c.i)?"checked":""}></td>`;
-      case "pos":    return `<td class="pwnum">${r.c.p||"-"}</td>`;
-      case "clpos":  return `<td class="pwnum cl">${r.c.cp||"-"}</td>`;
-      case "pilota": return `<td><span class="clsdot" style="background:${colClasse(r.c.cl)}"></span>${r.p.num?`<span class="lvnum">${esc(String(r.p.num))}</span>`:""}<span class="lvname" data-car="${r.c.i}">${esc(r.p.n||("Auto "+r.c.i))}</span>${r.c.pit?' <span class="lvtag">BOX</span>':""}</td>`;
-      case "cat":    return `<td class="pwnum cls">${esc(r.cat)}</td>`;
-      case "giro":   return `<td class="pwnum">${r.c.l||0}</td>`;
-      case "ultimo": return `<td class="pwnum">${r.c.lt?fmt(r.c.lt):"—"}</td>`;
-      case "best":   return `<td class="pwnum best">${r.c.bt?fmt(r.c.bt):"—"}</td>`;
-      case "passo":  return `<td class="pwnum">${r.D.passo?fmt(r.D.passo):"—"}</td>`;
-      case "gapcl":  return `<td class="pwnum">${r.gapClTxt}</td>`;
-      case "gapprec":return `<td class="pwnum">${r.gapPrecTxt}</td>`;
-      case "stint":  return `<td class="pwnum">${r.D.stint!=null?r.D.stint:"—"}${r.D.soste?`<span class="cpos">${r.D.soste}</span>`:""}</td>`;
-      case "box":    return `<td class="pwnum">${r.D.in_pit_da!=null?`<b class="pitnow">${r.D.in_pit_da}s</b>`:(r.D.pit_durata!=null?r.D.pit_durata+"s":"—")}</td>`;
+  // Contenuto di ogni cella. Le celle portano un identificativo cosi' possono essere
+  // aggiornate sul posto, senza ricostruire la tabella sotto le mani dell'utente.
+  const contenuto = (k, r) => {
+    switch(k){
+      case "sel":    return `<input type="checkbox" class="lvchk" data-car="${r.c.i}" ${liveSel.includes(r.c.i)?"checked":""}>`;
+      case "pos":    return String(r.c.p||"-");
+      case "clpos":  return String(r.c.cp||"-");
+      case "pilota": return `<span class="clsdot" style="background:${colClasse(r.c.cl)}"></span>${r.p.num?`<span class="lvnum">${esc(String(r.p.num))}</span>`:""}<span class="lvname" data-car="${r.c.i}">${esc(r.p.n||("Auto "+r.c.i))}</span>${r.c.pit?' <span class="lvtag">BOX</span>':""}`;
+      case "cat":    return esc(r.cat);
+      case "giro":   return String(r.c.l||0);
+      case "ultimo": return r.c.lt?fmt(r.c.lt):"—";
+      case "best":   return r.c.bt?fmt(r.c.bt):"—";
+      case "passo":  return r.D.passo?fmt(r.D.passo):"—";
+      case "gapcl":  return r.gapClTxt;
+      case "gapprec":return r.gapPrecTxt;
+      case "stint":  return `${r.D.stint!=null?r.D.stint:"—"}${r.D.soste?`<span class="cpos">${r.D.soste}</span>`:""}`;
+      case "box":    return r.D.in_pit_da!=null?`<b class="pitnow">${r.D.in_pit_da}s</b>`:(r.D.pit_durata!=null?r.D.pit_durata+"s":"—");
     }
-    return "<td></td>";
+    return "";
   };
+  const classeCella = k => k==="clpos" ? "pwnum cl" : k==="best" ? "pwnum best"
+                        : k==="cat" ? "pwnum cls" : k==="sel"||k==="pilota" ? "" : "pwnum";
+  const attrFluidi = (k, r) => k==="gapcl" ? ` data-gapcl="${r.c.i}" data-cap="${r.cap?r.cap.i:""}"`
+                             : k==="gapprec" ? ` data-gapprec="${r.c.i}" data-prec="${r.prec?r.prec.i:""}"` : "";
+  const cella = (col, r) => `<td class="${classeCella(col.k)}" data-c="${col.k}"${attrFluidi(col.k,r)}>${contenuto(col.k,r)}</td>`;
+
+  // Se colonne, ordinamento e insieme delle auto non sono cambiati, non ricostruisco:
+  // aggiorno solo i valori dentro le celle. Cosi' menu aperti, scorrimento e trascinamenti
+  // in corso non vengono interrotti a ogni secondo.
+  const firma = JSON.stringify([cols.map(c=>c.k), st.sort, mostrate.map(r=>r.c.i), liveInPausa]);
+  const vecchia = body.querySelector("table.tim");
+  if (vecchia && body.dataset.firma === firma){
+    mostrate.forEach(r => {
+      const tr = vecchia.querySelector(`tr[data-row="${r.c.i}"]`);
+      if (!tr) return;
+      tr.className = `${r.io?"lvme-row":""} ${r.c.pit?"lvpit":""} ${liveSel.includes(r.c.i)?"lvsel":""}`;
+      cols.forEach(col => {
+        if (col.k === "sel") return;                       // non tocco la spunta in uso
+        const td = tr.querySelector(`td[data-c="${col.k}"]`);
+        if (!td) return;
+        const nuovo = contenuto(col.k, r);
+        if (td.innerHTML !== nuovo) td.innerHTML = nuovo;
+        if (col.k === "gapcl"){ td.dataset.cap = r.cap ? r.cap.i : ""; }
+        if (col.k === "gapprec"){ td.dataset.prec = r.prec ? r.prec.i : ""; }
+      });
+    });
+    const c0 = document.getElementById("ctxlive");
+    if (c0) c0.innerHTML = `Classifica · ${righe.length} di ${ordinate.length} auto
+      <span class="lvdot">● aggiornato ${d.eta}s fa</span>`;
+    return;
+  }
+  body.dataset.firma = firma;
 
   body.innerHTML = `
     <div class="board">
-      <div class="ctx">Classifica · ${righe.length} di ${ordinate.length} auto
+      <div class="ctx" id="ctxlive">Classifica · ${righe.length} di ${ordinate.length} auto
         <span class="lvdot">● aggiornato ${d.eta}s fa</span></div>
       <div class="barrastrum">
         <div class="chansel">
@@ -1638,7 +1761,7 @@ function renderTiming(body, d, ordinate, nomi, der){
 
       <div class="tabbox" id="timbox">
       <table class="pwtab tim"><thead><tr>${cols.map(c=>TAB.th(c,st)).join("")}</tr></thead><tbody>
-      ${mostrate.map(r => `<tr class="${r.io?"lvme-row":""} ${r.c.pit?"lvpit":""} ${liveSel.includes(r.c.i)?"lvsel":""}">
+      ${mostrate.map(r => `<tr data-row="${r.c.i}" class="${r.io?"lvme-row":""} ${r.c.pit?"lvpit":""} ${liveSel.includes(r.c.i)?"lvsel":""}">
         ${cols.map(c=>cella(c,r)).join("")}</tr>`).join("")}
       </tbody></table></div>
       <div class="telhint">Trascina un'intestazione per spostare la colonna, cliccala per ordinare.
