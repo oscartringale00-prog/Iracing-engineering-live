@@ -357,9 +357,18 @@ class IracingSource:
         now_l = time.time()
         if now_l - self.last_live >= LIVE_EVERY_S:
             self.last_live = now_l
-            live = self._read_live()
-            if live:
-                events.append(("live", live))
+            # La fotografia della gara serve al Pitwall, non alla registrazione dei giri:
+            # se si rompe, il Pitwall resta indietro ma la telemetria continua ad arrivare.
+            try:
+                live = self._read_live()
+                if live:
+                    events.append(("live", live))
+                self.live_ko = 0
+            except Exception as e:
+                self.live_ko = getattr(self, "live_ko", 0) + 1
+                if self.live_ko in (1, 10) or self.live_ko % 300 == 0:
+                    log(f"Dati per il Pitwall non disponibili ({type(e).__name__}): "
+                        f"i giri continuano comunque a essere registrati.", e)
 
         car, track, num, stype = self._read_context()
         key = (car, track, num)
@@ -537,6 +546,7 @@ class IracingSource:
                 "gap": g(f2, i, float, -1),           # distacco dal precedente
                 "ty": g(tyre, i),                     # mescola
             })
+        ctx = self._read_context()
         me = self._safe_var("PlayerCarIdx")
         di = self._safe_var("DriverInfo") or {}
         piloti = [{"i": d.get("CarIdx"), "n": d.get("UserName"), "num": d.get("CarNumber"),
@@ -677,8 +687,6 @@ class DemoSource:
             steer = 0.5 * math.sin(2 * a) + 0.2 * math.sin(5 * a)
             gear = max(2, min(6, int(3 + 2 * math.sin(3 * a + 1))))
             rpm = 4500 + 2500 * thr
-            lat = 45.62 + 0.006 * math.sin(a) + 0.002 * math.sin(2 * a)
-            lon = 9.28 + 0.009 * math.cos(a)
             buf["speed"].append(round(speed, 2)); buf["throttle"].append(round(thr, 3))
             buf["brake"].append(round(brk, 3)); buf["clutch"].append(0.0)
             buf["steer"].append(round(steer, 4)); buf["gear"].append(gear)
@@ -686,11 +694,19 @@ class DemoSource:
             buf["lataccel"].append(round(2.5 * math.sin(2 * a), 3))
             buf["lonaccel"].append(round(1.5 * math.sin(3 * a + 1), 3))
             buf["vertaccel"].append(round(9.81 + 0.8 * math.sin(6 * a), 3))
-            for k, base, amp, ph in (("rh_lf",30,4,0),("rh_rf",30,4,0.3),("rh_lr",47,5,1),("rh_rr",47,5,1.3)):
-                buf[k].append(round(base + amp * math.sin(3 * a + ph), 2))
+            # corse degli ammortizzatori centrali (le altezze di marcia iRacing non le espone)
+            buf["heave_f"].append(round(0.021 + 0.005 * math.sin(3 * a), 4))
+            buf["heave_r"].append(round(0.024 + 0.005 * math.sin(3 * a + 1), 4))
+            buf["velx"].append(round(speed, 3))
+            buf["vely"].append(0.0)
+            buf["yaw"].append(round((a + math.pi / 2) % (2 * math.pi), 4))
+            buf["yawrate"].append(round(math.sin(2 * a) * 0.15, 4))
+            for _k, _ph in (("shock_lf",0),("shock_rf",0.3),("shock_lr",1),("shock_rr",1.3)):
+                buf[_k].append(round(0.017 + 0.006 * math.sin(3 * a + _ph), 4))
+            for k, ph in (("shock_lf", 0), ("shock_rf", 0.3), ("shock_lr", 1), ("shock_rr", 1.3)):
+                buf[k].append(round(0.017 + 0.006 * math.sin(3 * a + ph), 4))
             for k, ph in (("shock_lf",0),("shock_rf",0.3),("shock_lr",1),("shock_rr",1.3)):
                 buf[k].append(round(0.017 + 0.006 * math.sin(3 * a + ph), 4))
-            buf["lat"].append(round(lat, 7)); buf["lon"].append(round(lon, 7))
         return buf
 
     def poll(self):
@@ -837,6 +853,19 @@ HF_ATTIVA = True           # alta frequenza (360 Hz) sui canali di sospensioni e
 SEND_TIMEOUT = 45          # tempo concesso all'invio: la telemetria di un giro può superare 1 MB
 QUEUE_SOFT = 8             # oltre questa attesa si smette di accodare telemetria (pesante)
 QUEUE_HARD = 40            # tetto assoluto: oltre, si scarta tutto per non far crescere la memoria
+
+
+def _log_traccia(e):
+    """Scrive nel registro il punto esatto in cui l'errore si e' verificato: senza questo,
+    un errore di programmazione e' quasi impossibile da individuare a distanza."""
+    try:
+        import traceback
+        for riga in traceback.format_exception(type(e), e, e.__traceback__):
+            for r in riga.rstrip().split("\n"):
+                if r.strip():
+                    log("    " + r.strip())
+    except Exception:
+        pass
 
 
 def _riduci(buf, tetto=None, asse="lapdist"):

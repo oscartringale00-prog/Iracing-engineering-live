@@ -542,3 +542,29 @@ PAUSA: pulsante che congela l'aggiornamento della classifica, utile perche' la t
 ridisegna ogni secondo e ordinandola le righe si rimescolerebbero sotto le dita.
 Inoltre la tabella dei giri cresce ora per intero come quella della classifica.
 ✅ Nessun terminale: solo index.html.
+
+## v37 — CORREZIONE CRITICA: agente in ciclo infinito di riconnessioni
+Sintomo: dopo "Connesso al server" compariva subito "Connessione persa", ogni secondo, sia in
+test drive sia online. L agente non registrava piu nulla.
+CAUSA REALE (riprodotta in simulazione): NameError name ctx is not defined dentro _read_live().
+La riga che assegnava ctx era stata cancellata da una sostituzione di blocco troppo ampia in una
+modifica precedente, lasciando pero i punti che la usano. La fotografia della gara viene chiamata
+una volta al secondo: ogni volta sollevava l errore, il ciclo principale lo catturava con un
+gestore generico e lo scambiava per una caduta di rete, riconnetteva, e ricadeva nello stesso
+errore. Da qui il ciclo infinito.
+CORREZIONI:
+ 1. ripristinata l assegnazione mancante;
+ 2. la fotografia della gara e ora ISOLATA: un suo guasto lascia indietro il Pitwall ma NON
+    impedisce la registrazione di giri e telemetria, che sono la funzione principale;
+ 3. gli errori di PROGRAMMAZIONE (nome, tipo, chiave...) non vengono piu confusi con quelli di
+    rete: producono un messaggio esplicito, la traccia completa nel registro, e non vengono
+    ripetuti all infinito (36 messaggi su 1000 occorrenze identiche);
+ 4. modalita demo riparata: generava ancora canali rimossi (altezze di marcia, coordinate GPS) e
+    non ne riempiva altri esistenti. Trovati confrontando le chiavi scritte con quelle valide,
+    invece di scoprirli uno alla volta.
+VERIFICHE: percorso reale con l elenco esatto delle variabili del sistema dell utente, 600 letture
+senza errori; guasto forzato nella fotografia, giri comunque registrati; demo completa con 2 giri
+e 6600 campioni; messaggi distinti per errore di programma e di rete.
+AVVISO ai posteri: le sostituzioni di blocchi ampi possono cancellare righe adiacenti. Serve una
+verifica automatica dopo ogni modifica, non solo il controllo di sintassi.
+⚠️ agent.py modificato -> ricostruire l exe. Su GitHub: agent.py.
