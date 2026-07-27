@@ -650,22 +650,61 @@ LIVE_TTL = 30             # dopo questi secondi senza aggiornamenti la sessione 
 def _live_ingest(uid, msg):
     st = LIVE.get(uid)
     if st is None or msg.get("sessione", {}).get("tipo") != st.get("sessione", {}).get("tipo"):
-        st = {"soste": {}, "visto": {}}
+        st = {"soste": {}, "visto": {}, "pit_in": {}, "pit_durata": {}, "tempi": {}, "ultimo_giro": {}}
         LIVE[uid] = st
-    # Storia delle soste dedotta: registro il passaggio "in pista -> ai box" di ogni auto.
-    # Serve a sapere da quanti giri ciascun avversario è sullo stesso treno di gomme.
+    ora = time.time()
     for c in msg.get("cars", []):
         i = str(c.get("i"))
+        # --- storia delle soste, dedotta dai passaggi in corsia box ---
         prima = st["visto"].get(i, 0)
-        if c.get("pit") and not prima:
+        ai_box = c.get("pit", 0)
+        if ai_box and not prima:
             st["soste"].setdefault(i, []).append(c.get("l"))
-        st["visto"][i] = c.get("pit", 0)
+            st["pit_in"][i] = ora
+        elif prima and not ai_box and st["pit_in"].get(i):
+            st["pit_durata"][i] = round(ora - st["pit_in"].pop(i), 1)
+        st["visto"][i] = ai_box
+        # --- storico dei tempi, per il passo medio recente ---
+        lt = c.get("lt")
+        if lt and lt > 0 and st["ultimo_giro"].get(i) != lt:
+            st["ultimo_giro"][i] = lt
+            # Registro numero di giro E tempo: serve all'analisi storica e all'isolamento
+            # degli stint. Il giro appena concluso è quello precedente a quello in corso.
+            n_giro = (c.get("l") or 0)
+            st["tempi"].setdefault(i, []).append({"l": n_giro, "t": lt})
+            st["tempi"][i] = st["tempi"][i][-300:]
     st.update({k: msg[k] for k in ("ts", "me", "cars", "piloti", "sessione", "mia") if k in msg})
-    st["ricevuto"] = time.time()
-    # pulizia delle sessioni abbandonate, per non far crescere la memoria
+    st["ricevuto"] = ora
     if len(LIVE) > 200:
-        for k in [k for k, v in LIVE.items() if time.time() - v.get("ricevuto", 0) > 3600]:
+        for k in [k for k, v in LIVE.items() if ora - v.get("ricevuto", 0) > 3600]:
             LIVE.pop(k, None)
+
+
+def _derivati(st):
+    """Calcola per ogni auto i valori che iRacing non fornisce: giri nello stint, passo medio
+    recente, tempo dell'ultima sosta. Il passo medio usa i giri validi piu' recenti scartando
+    quelli anomali (traffico, uscita dai box)."""
+    out = {}
+    ora = time.time()
+    for c in st.get("cars", []):
+        i = str(c.get("i"))
+        soste = st.get("soste", {}).get(i, [])
+        tempi = [x["t"] for x in st.get("tempi", {}).get(i, []) if x.get("t")]
+        passo = None
+        if len(tempi) >= 2:
+            recenti = tempi[-5:]
+            m = sorted(recenti)[len(recenti) // 2]          # mediana come riferimento
+            puliti = [t for t in recenti if t <= m * 1.05][-3:]
+            if puliti:
+                passo = round(sum(puliti) / len(puliti), 3)
+        out[i] = {
+            "stint": (c.get("l") - soste[-1]) if soste and c.get("l") is not None else c.get("l"),
+            "soste": len(soste),
+            "passo": passo,
+            "pit_durata": st.get("pit_durata", {}).get(i),
+            "in_pit_da": round(ora - st["pit_in"][i], 1) if st.get("pit_in", {}).get(i) else None,
+        }
+    return out
 
 
 @app.get("/api/live")
@@ -679,6 +718,7 @@ async def live_state(pilot: str | None = None, uid: str = Depends(uid_dep)):
     if eta > LIVE_TTL:
         return {"attivo": False, "motivo": "programma non collegato", "fermo_da": round(eta)}
     return {"attivo": True, "eta": round(eta, 1), "soste": st.get("soste", {}),
+            "derivati": _derivati(st), "storico": st.get("tempi", {}),
             **{k: st.get(k) for k in ("ts", "me", "cars", "piloti", "sessione", "mia")}}
 
 
@@ -701,25 +741,38 @@ async def live_pilots(uid: str = Depends(uid_dep)):
 
 @app.get("/api/track-outline")
 async def track_outline(name: str, pilot: str | None = None, uid: str = Depends(uid_dep)):
-    """Sagoma del tracciato ricavata dal GPS di un giro già in archivio.
-    Serve al Pitwall per disegnare la pista e collocarci sopra le auto: iRacing fornisce la
-    posizione degli avversari come frazione di giro, non come coordinate."""
+    """Dati per disegnare la sagoma del tracciato nel Pitwall.
+    iRacing fornisce la posizione degli avversari come frazione di giro, non come coordinate:
+    serve quindi la forma della pista, che ricaviamo da un giro gia' in archivio.
+    Le coordinate GPS su molti sistemi NON esistono, quindi restituiamo velocita' e direzione
+    e la forma viene ricostruita dal browser con la stessa funzione usata nella telemetria.
+    Si sceglie il giro piu' veloce disponibile: e' quello con la traiettoria piu' pulita."""
     owner = await owner_or_404(uid, pilot)
     row = await pool.fetchrow(
-        "SELECT tel.lat, tel.lon, tel.lapdist FROM lap_telemetry tel "
+        "SELECT tel.velx, tel.vely, tel.yaw, tel.yawrate, tel.speed, tel.lataccel, "
+        "       tel.lapdist, tel.lat, tel.lon, l.time_s "
+        "FROM lap_telemetry tel "
         "JOIN sessions s ON s.id = tel.session_id "
         "JOIN tracks t ON t.id = s.track_id AND lower(t.name) = lower($2) "
-        "WHERE s.user_id = $1 AND tel.lat IS NOT NULL AND array_length(tel.lat,1) > 50 "
-        "ORDER BY tel.id DESC LIMIT 1", owner, name)
-    if not row or not row["lat"]:
-        return {"disponibile": False}
-    lat, lon, dist = list(row["lat"]), list(row["lon"]), list(row["lapdist"])
-    n = len(lat)
-    passo = max(1, n // 240)
-    pts = [{"d": round(dist[i], 4), "lat": lat[i], "lon": lon[i]} for i in range(0, n, passo)]
-    if len(pts) < 20 or (max(p["lat"] for p in pts) - min(p["lat"] for p in pts)) < 1e-6:
-        return {"disponibile": False}
-    return {"disponibile": True, "punti": pts}
+        "JOIN laps l ON l.session_id = tel.session_id AND l.client_lap_uid = tel.lap_uid "
+        "WHERE s.user_id = $1 AND l.time_s > 0 AND array_length(tel.lapdist,1) > 50 "
+        "  AND (tel.velx IS NOT NULL OR tel.lat IS NOT NULL) "
+        "ORDER BY l.time_s ASC LIMIT 1", owner, name)
+    if not row:
+        return {"disponibile": False, "motivo": "nessun giro con i dati necessari"}
+    dist = list(row["lapdist"])
+    n = len(dist)
+    passo = max(1, n // 400)
+    idx = list(range(0, n, passo))
+    def col(k):
+        v = row[k]
+        return [v[i] for i in idx] if v else None
+    canali = {"lapdist": [round(dist[i], 5) for i in idx]}
+    for k in ("velx", "vely", "yaw", "yawrate", "speed", "lataccel", "lat", "lon"):
+        c = col(k)
+        if c is not None:
+            canali[k] = c
+    return {"disponibile": True, "canali": canali, "time_s": row["time_s"]}
 
 
 @app.delete("/api/cars/{car_id}")

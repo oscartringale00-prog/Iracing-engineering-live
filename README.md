@@ -401,3 +401,144 @@ campioni con diradamento uniforme.
 VERIFICHE: 360,1 Hz misurati, rapporto 6,0x, 10/10 canali presenti, assi allineati e coerenti,
 comportamento identico a prima con l'interruttore spento.
 ⚠️ agent.py modificato -> ricostruire l'exe. Su GitHub: agent.py, server.py, schema.sql, index.html.
+
+## v29 — Mappa specchiata: convenzione degli angoli
+Segnalazione: la mappa di Road America risultava SPECCHIATA (il tracciato girava a sinistra
+invece che a destra, curva 1 dalla parte sbagliata).
+Causa: YawNorth è una BUSSOLA (l'angolo cresce in senso ORARIO partendo da nord), mentre la
+ricostruzione lo trattava come angolo matematico (antiorario partendo da est). È esattamente il
+cambio di verso che produce un'immagine riflessa.
+Verifica del difetto: con la formula vecchia un'auto diretta a nord si spostava a DESTRA e un
+tracciato percorso in senso orario veniva disegnato antiorario.
+Correzione: direzione di marcia = (sin, cos) sugli assi (est, nord). Stessa convenzione applicata
+anche ai metodi di ripiego (YawRate e accelerazione laterale), con il segno invertito perché una
+rotazione antioraria corrisponde a una bussola decrescente.
+Verifica: su un rettangolo percorso in senso orario (nord, est, sud, ovest) il disegno risulta
+orario, il primo tratto sale e il secondo va a destra.
+✅ Nessun terminale: solo index.html.
+
+## v30 — PITWALL rifatto: FASE 1 (torre di controllo + Overview & Timing)
+Rifatta la pagina Pitwall sulla base della specifica "muretto box", ma DENTRO il progetto
+esistente invece che come progetto separato: si riusa l'agente, il server con account/team/
+visibilita', l'archivio e il deploy gia' funzionanti.
+TORRE DI CONTROLLO (barra fissa in alto, sempre visibile):
+ - minimappa con tutte le auto colorate PER CLASSE (gare multiclasse), la propria in bianco,
+   chi e' ai box in trasparenza, i piloti selezionati con contorno evidenziato;
+ - GHOST CAR: se mi fermassi adesso, in che posizione rientrerei e fra quali piloti. Calcolata
+   confrontando la distanza percorsa con quella che gli altri accumulano durante la sosta,
+   usando la perdita ai box misurata dall'archivio;
+ - meteo compatto: aria, asfalto, stato pista, pioggia in corso, vento con direzione, tempo/giri.
+SCHEDA "OVERVIEW & TIMING": posizione assoluta e di classe, pilota con pallino colore classe e
+numero, categoria, giro, ultimo, migliore, PASSO MEDIO recente (mediana dei giri validi recenti,
+scartando gli anomali), distacco dal leader e dal precedente convertiti in secondi, giri nello
+stint con numero di soste, tempo ai box (in corso o dell'ultima sosta).
+Spuntando due piloti vengono evidenziati sulla minimappa.
+SCHEDA "METEO": solo dati reali. Dichiarato esplicitamente che iRacing NON fornisce previsioni
+(verificato: nessuna variabile di previsione fra le 354), quindi niente radar a 2 ore inventato.
+Lato agente: la fotografia ora include classe, posizione di classe, distacco calcolato da iRacing,
+giri completati, mescola, e meteo esteso (pioggia, bagnato, cielo, umidita').
+Lato server: calcolo dei valori derivati che iRacing non da' (giri nello stint, passo medio,
+durata delle soste), sempre in memoria e mai nel database.
+Restano da fare: schede Strategia predittiva e Analisi giri (fasi successive).
+⚠️ agent.py modificato -> ricostruire l'exe. Su GitHub: agent.py, server.py, index.html.
+
+## v31 — PITWALL FASE 2: strategia predittiva dal vivo
+Nuova scheda "Strategia" dentro il Pitwall dal vivo, che unisce i dati della gara in corso ai
+parametri MISURATI dall'archivio (consumo, degrado, effetto peso, perdita ai box). I parametri
+vengono cercati automaticamente all'inizio della sessione abbinando auto e pista per nome.
+BENZINA: quantita' a bordo, consumo, autonomia in giri, quanto serve per finire, avanzo o
+deficit. Se manca benzina calcola il LIFT & COAST: quanti litri al giro risparmiare e in che
+percentuale del consumo, per tagliare il traguardo con il margine di sicurezza impostato
+(evita i tagli di potenza dei motori GTP a secco).
+MODELLO GOMME: malus da gomme fredde sul giro di uscita, dimezzato al secondo giro, quasi nullo
+al terzo, poi solo degrado lineare. Verificato: 102,60 -> 102,04 -> 101,72 -> 101,52 s.
+SOSTA: rifornimento in secondi/litro + cambio gomme, con interruttore CONTEMPORANEO o
+SEQUENZIALE. Verificato su 30 L e 4 gomme: 95 s contro 108 s.
+CONFRONTO A/B/C: solo benzina, benzina + 2 gomme, benzina + 4 gomme. Per ogni scenario cerca il
+giro di sosta ottimale e mostra durata sosta, tempo totale e differenza dal migliore.
+Verifiche di sensibilita': con gomme consumate (18 giri) il cambio conviene; con degrado alto
+(0,25 s/giro) il vantaggio del cambio sale a 110 s; con rifornimenti lunghi il cambio gomme
+diventa gratuito perche' avviene durante il rifornimento.
+Preferenze del pannello ricordate nel browser.
+✅ Nessun terminale: solo index.html. Agente e server invariati rispetto alla Fase 1.
+
+## v32 — PITWALL FASE 3: analisi giri e stint
+Nuova scheda "Analisi giri" nel Pitwall dal vivo.
+ - CONFRONTO fino a 5 piloti contemporaneamente, scelti da chip cliccabili con il numero di giri
+   disponibili e il pallino del colore di classe.
+ - GRAFICO DEL PASSO disegnato a mano su canvas: una linea per pilota, griglia con i tempi,
+   legenda con numero di giri, media e giro migliore nella finestra selezionata.
+ - FINESTRA DI ANALISI: giro di inizio e di fine, piu' pulsanti che isolano automaticamente i
+   singoli STINT ricavati dalle soste dedotte, e un pulsante "Tutto".
+ - FILTRO GIRI PULITI: scarta i giri oltre il 2% sopra la mediana del pilota (out-lap, rientri,
+   traffico). La prima versione usava il 5% e non scartava NULLA: verificato che al 2% vengono
+   correttamente esclusi giro di uscita e rientri, e la media scende di 0,67 s facendo emergere
+   il passo reale.
+ - TABELLA cronologica dei tempi con il delta fra i primi due piloti selezionati, evidenziando
+   il migliore di ogni giro.
+ - Cliccando il nome di un pilota nella classifica si salta direttamente alla sua analisi.
+Corretto anche uno stint fantasma che compariva quando l'ultima sosta coincideva con l'ultimo giro.
+Lato server: lo storico dei giri passa da 10 tempi sciolti a 300 coppie giro+tempo per auto,
+necessarie all'isolamento degli stint. Sempre in memoria, mai nel database.
+✅ Nessun terminale: index.html + server.py. Agente invariato.
+
+## v33 — Barra non piu' appiccicata + riquadri ridimensionabili
+1) LA BARRA IN ALTO non e' piu' "sticky": era un mio fraintendimento. Resta comunque visibile
+   passando da una scheda all'altra (sta fuori dal contenitore delle schede), ma ora scorre
+   normalmente quando si scende nella pagina. Stessa cosa per la mappa nella vista telemetria.
+2) RIQUADRI RIDIMENSIONABILI: minimappa, classifica, grafico del passo, tabella dei giri, mappa
+   telemetria e colonna dei grafici si allargano trascinando l'angolo in basso a destra.
+   Le misure vengono ricordate nel browser (chiave "dimensioni") e riapplicate al rientro.
+   I grafici disegnati su canvas NON si limitano a essere tagliati: rileggono l'altezza del
+   riquadro e si ridisegnano alla nuova dimensione.
+   Il salvataggio e' ritardato di 400 ms per non scrivere a ogni pixel durante il trascinamento.
+✅ Nessun terminale: solo index.html.
+
+## v34 — Il Pitwall usa la mappa vera del circuito
+Problema: nel Pitwall compariva la barra orizzontale invece della pista. Causa: l'endpoint
+/api/track-outline cercava le coordinate GPS, che su questo sistema iRacing NON fornisce; non
+trovandole rispondeva "non disponibile" e la pagina ripiegava sulla barra. Nel frattempo la vista
+telemetria disegnava gia' la mappa corretta ricostruendola da velocita' e direzione.
+Correzione: l'endpoint non cerca piu' il GPS ma restituisce i canali disponibili (velocita',
+direzione, rotazione, distanza sul giro) del giro PIU' VELOCE in archivio su quella pista, e la
+forma viene ricostruita dal browser con la STESSA funzione gia' usata nella telemetria (spostata
+a livello globale): una sola matematica, gia' verificata, invece di due che rischiano di divergere.
+Verifica: sagoma chiusa di 1528x1528 m, auto collocate correttamente a 0/25/50/75% del giro.
+NOTA: i canali di velocita' e direzione sono stati aggiunti da poco; i giri registrati prima non
+li hanno, quindi per quelle piste la sagoma comparira' dopo aver rifatto un giro.
+Corretto anche un difetto nella DEMO (solo anteprima, non il sito): mancavano i riferimenti ai
+dati di telemetria, persi in una rigenerazione precedente.
+✅ Nessun terminale: index.html + server.py.
+
+## v35 — Classifica per intero e filtro categorie
+1) TABELLA DEI TEMPI: niente piu' barra di scorrimento interna, cresce per tutta la sua lunghezza
+   e si scorre con la pagina. Resta comunque ridimensionabile trascinando l'angolo, per chi
+   preferisce tenerla compatta: se non la si tocca, resta intera.
+2) FILTRO CATEGORIE: menu a tendina con una spunta per ogni categoria presente in pista.
+   L'etichetta usa il modello di auto piu' diffuso nella classe (iRacing identifica le classi con
+   numeri interni, quindi si legge "GT3" e non "classe 4"). La scelta viene ricordata nel browser.
+   LA PROPRIA AUTO RESTA SEMPRE VISIBILE anche nascondendo la sua categoria.
+3) DISTACCHI DAL LEADER DI CLASSE, non dal leader assoluto: in una gara multiclasse la corsa che
+   conta e' quella di categoria. Verificato che ogni classe abbia il proprio leader come
+   riferimento. La colonna "Precedente" segue invece l'ordine mostrato, quindi si adatta al filtro
+   ed e' utile anche per il traffico.
+   Aggiunta la colonna con la posizione di classe accanto a quella assoluta.
+✅ Nessun terminale: solo index.html.
+
+## v36 — Tabelle configurabili: colonne, ordine, ordinamento, pausa
+Un unico meccanismo (oggetto TAB) usato sia dalla classifica dal vivo sia dalla tabella dei giri.
+ - SCEGLIERE LE COLONNE: menu a tendina con una spunta per colonna, stesso stile del menu Canali.
+ - RIORDINARLE: trascinando l'intestazione (computer) oppure con le frecce su/giu' nel menu
+   (funzionano anche da telefono, dove il trascinamento e' scomodo). Piu' un pulsante
+   "Ripristina ordine" che riporta tutto com'era.
+ - ORDINARE: click sull'intestazione (crescente, decrescente, nessuno). I valori mancanti
+   restano SEMPRE in fondo: nella prima versione in ordine decrescente finivano in cima, corretto.
+ - Tutto memorizzato nel browser, separatamente per ogni tabella.
+PROBLEMA RISOLTO sull'ordinamento della classifica dal vivo: la colonna "Precedente" mostrava il
+distacco da chi precede NELL'ORDINE VISUALIZZATO, quindi ordinando per un'altra colonna avrebbe
+indicato un'auto lontanissima in pista. Ora le righe si costruiscono sempre sull'ordine di gara e
+il distacco resta riferito a chi precede IN CLASSIFICA, qualunque ordinamento sia attivo.
+PAUSA: pulsante che congela l'aggiornamento della classifica, utile perche' la tabella si
+ridisegna ogni secondo e ordinandola le righe si rimescolerebbero sotto le dita.
+Inoltre la tabella dei giri cresce ora per intero come quella della classifica.
+✅ Nessun terminale: solo index.html.

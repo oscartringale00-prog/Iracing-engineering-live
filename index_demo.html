@@ -106,7 +106,7 @@ tr.clk:hover td{background:rgba(225,6,0,.12)}
 .graphcol{text-align:right;width:28px}
 .telwrap{display:grid;grid-template-columns:1fr;gap:14px}
 @media(min-width:720px){.telwrap{grid-template-columns:minmax(320px,38%) 1fr;align-items:start}}
-@media(min-width:720px){.telmap{position:sticky;top:12px}}
+
 .telmap{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--red);padding:8px}
 .telmap canvas{display:block;touch-action:none}
 .telgraphs{display:flex;flex-direction:column;gap:8px}
@@ -133,6 +133,79 @@ tr.clk:hover td{background:rgba(225,6,0,.12)}
 .pwno td{color:var(--dim);font-style:italic}
 .pwnote{margin-top:12px;font-size:13px;border-left:3px solid var(--red);padding-left:12px}
 .lvwrap{display:grid;grid-template-columns:1fr;gap:12px}
+.hud{background:var(--bg);border-bottom:2px solid var(--red);
+     display:grid;grid-template-columns:1fr;gap:12px;padding:10px 0 12px;margin-bottom:4px}
+@media(min-width:820px){.hud{grid-template-columns:1fr 280px}}
+.hudmap{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--red);padding:8px;position:relative}
+.hudside{display:flex;flex-direction:column;gap:10px}
+.hudmeteo{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:var(--panel);border:1px solid var(--line);padding:10px}
+.mtitem{display:flex;flex-direction:column;gap:2px}
+.mtitem span{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.mtitem b{font-family:'Chivo Mono',monospace;font-size:13px}
+.ghost{background:var(--panel);border:1px solid var(--line);border-top:2px solid #fff;padding:10px;flex:1}
+.ghhead{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.ghpos{font-family:'Chivo Mono',monospace;font-size:28px;font-weight:700;line-height:1.1}
+.ghpos span{font-size:11px;color:var(--dim);font-weight:400}
+.ghtra{font-size:11px;color:var(--dim);margin-top:4px;line-height:1.5}
+.ghnote{font-size:9px;color:var(--dim);margin-top:6px;font-style:italic}
+.tabsub{margin-top:8px}
+.lvghost{position:absolute;top:50%;transform:translate(-50%,-50%);color:#fff;font-size:16px}
+.lvcar.ev{outline:2px solid #fff;z-index:4}
+.tim{font-size:12px}
+.tim th{white-space:nowrap}
+.tim td{padding:6px 8px;white-space:nowrap}
+.clsdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.cpos{font-size:9px;color:var(--dim);margin-left:4px;vertical-align:super}
+.tim .best{color:#c07bff}
+.tim .cls{font-size:10px;color:var(--dim)}
+.tim .cl{color:var(--dim)}
+.lvname{cursor:pointer;border-bottom:1px dotted var(--line)}
+.lvname:hover{color:var(--red)}
+.lvsel{outline:1px solid rgba(255,255,255,.25)}
+.lvchk{accent-color:var(--red);width:14px;height:14px;cursor:pointer}
+.pitnow{color:#f2b63d}
+.okv{color:#35d07f}
+.kov{color:var(--red)}
+.mtbig{display:flex;flex-direction:column;gap:3px}
+.mtbig span{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
+.mtbig b{font-family:'Chivo Mono',monospace;font-size:20px}
+.stpick{display:flex;flex-wrap:wrap;gap:8px;padding-top:12px}
+.stchip{display:flex;align-items:center;gap:6px;background:var(--panel2);border:1px solid var(--line);padding:6px 10px;font-size:12px;cursor:pointer}
+.stchip.on{border-color:var(--red)}
+.stchip input{accent-color:var(--red);width:13px;height:13px}
+.stchip i{font-style:normal;font-size:10px;color:var(--dim)}
+.strow{display:flex;flex-wrap:wrap;gap:14px;align-items:center;padding-top:12px;font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+.strow label{display:flex;align-items:center;gap:6px}
+.txtin.small{width:80px;padding:6px 8px}
+#stchart{display:block;width:100%;margin-top:10px}
+.stleg{display:inline-flex;align-items:center;gap:5px;margin-right:14px}
+.stleg i{width:10px;height:3px;display:inline-block}
+.stnota{font-style:italic}
+.sttab{margin-top:8px}
+.barrastrum{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0 4px}
+.colmenu{min-width:240px}
+.colrow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 10px;font-size:13px}
+.colrow:hover{background:var(--panel2)}
+.colrow label{display:flex;align-items:center;gap:8px;cursor:pointer;flex:1}
+.colrow input{accent-color:var(--red);width:15px;height:15px}
+.colmove{display:flex;gap:2px}
+.colmove button{background:transparent;border:1px solid var(--line);color:var(--dim);width:20px;height:20px;font-size:9px;cursor:pointer;padding:0}
+.colmove button:hover:not(:disabled){border-color:var(--red);color:var(--red)}
+.colmove button:disabled{opacity:.25;cursor:default}
+th[draggable]{cursor:grab}
+th.ordina{cursor:pointer;user-select:none}
+th.ordina:hover{color:var(--ink)}
+th.ordinata{color:var(--red)}
+th.trascino{opacity:.4}
+th.sopra{box-shadow:inset 3px 0 0 var(--red)}
+.chanbtn.inpausa{border-color:#f2b63d;color:#f2b63d}
+.chartbox{height:300px;margin-top:10px}
+.tabbox{margin-top:6px}
+#stchart{display:block;width:100%;height:100%}
+.ridim{resize:vertical;overflow:auto;position:relative}
+.ridim::-webkit-resizer{background:var(--panel2)}
+.ridim::after{content:"";position:absolute;right:2px;bottom:2px;width:10px;height:10px;
+  border-right:2px solid var(--dim);border-bottom:2px solid var(--dim);opacity:.5;pointer-events:none}
 @media(min-width:820px){.lvwrap{grid-template-columns:1fr 300px}}
 #lvmap{display:block;width:100%;margin-top:10px}
 .lvdot{color:var(--red);font-size:10px;margin-left:10px;text-transform:none;letter-spacing:0}
@@ -277,6 +350,37 @@ const crumb = document.getElementById("crumb");
 const uarea = document.getElementById("uarea");
 const cache = {carName:{}};
 let pollTimer = null;
+
+/* ---------- Riquadri ridimensionabili ---------- */
+// L'utente trascina l'angolo in basso a destra; la misura resta memorizzata nel suo browser.
+let dimensioni = {};
+try { dimensioni = JSON.parse(localStorage.getItem("dimensioni") || "{}"); } catch(e){}
+let _salvaDimTimer = null;
+function salvaDimensioni(){
+  clearTimeout(_salvaDimTimer);
+  _salvaDimTimer = setTimeout(() => {
+    try { localStorage.setItem("dimensioni", JSON.stringify(dimensioni)); } catch(e){}
+  }, 400);
+}
+function ridimensionabile(el, chiave, alRidimensiona){
+  if (!el) return;
+  el.classList.add("ridim");
+  const salvata = dimensioni[chiave];
+  if (salvata && salvata > 40) el.style.height = salvata + "px";
+  if (el.dataset.ridim === chiave) return;      // osservatore già attivo
+  el.dataset.ridim = chiave;
+  if (typeof ResizeObserver === "undefined") return;
+  let ultima = el.offsetHeight;
+  const ro = new ResizeObserver(() => {
+    const h = Math.round(el.offsetHeight);
+    if (Math.abs(h - ultima) < 2) return;
+    ultima = h;
+    dimensioni[chiave] = h;
+    salvaDimensioni();
+    if (alRidimensiona) alRidimensiona(h);
+  });
+  ro.observe(el);
+}
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
@@ -578,11 +682,11 @@ const DEMO = (() => {
       return [{id:"me", name:"I miei giri", is_me:true, sessione:"Race"},
               {id:"p2", name:"Marco Rossi", is_me:false, sessione:"Practice"}];
     if (p.startsWith("track-outline")){
-      const tel = telById[101];
-      const pts = [];
-      for (let i=0;i<tel.lapdist.length;i+=4)
-        pts.push({d: tel.lapdist[i], lat: tel.lat[i], lon: tel.lon[i]});
-      return {disponibile:true, punti:pts};
+      const tel = (lapIndex[101]||{}).tel || {}; const c = {};
+      ["lapdist","velx","vely","yaw","yawrate","speed","lataccel"].forEach(k=>{
+        if (tel[k]) c[k] = tel[k].filter((_,i)=>i%4===0);
+      });
+      return {disponibile:true, canali:c, time_s:107.324};
     }
     if (p.startsWith("live")){
       const t = Date.now()/1000;
@@ -590,15 +694,30 @@ const DEMO = (() => {
       for (let i=0;i<12;i++){
         const vel = 1/108 * (1 + (i%5)*0.004);
         const d = ((t*vel) + i*0.083) % 1;
-        cars.push({i, p:i+1, l: 8 + (i%3), d:+d.toFixed(4),
+        cars.push({i, p:i+1, cp: (i%4)+1, cl: i%3, l: 22 + (i%3), d:+d.toFixed(4),
                    pit: (i===4 && Math.floor(t)%40 < 6) ? 1 : 0,
-                   lt: +(108 + (i%5)*0.4).toFixed(3), bt: +(107.2 + (i%5)*0.35).toFixed(3)});
-        piloti.push({i, n:`Pilota ${i+1}`, num:String(10+i), auto:"MX-5"});
-        if (i%3===0) soste[String(i)] = [4];
+                   lt: +(108 + (i%5)*0.4).toFixed(3), bt: +(107.2 + (i%5)*0.35).toFixed(3),
+                   gap: +(i*0.9).toFixed(2), ty: i%2});
+        piloti.push({i, n:`Pilota ${i+1}`, num:String(10+i), auto:["GTP","LMP2","GT3"][i%3]});
+        if (i%3===0) soste[String(i)] = [9, 18];
       }
       return {attivo:true, eta:0.4, soste, ts:t, me:0, cars, piloti,
+              storico: Object.fromEntries(cars.map(c=>{
+                 const gg=[]; let base=107.8+(c.i%5)*0.45;
+                 for(let L=1; L<=c.l; L++){
+                   const eta = L % 9;                       // stint da 9 giri
+                   const freddo = eta===0?1.1:eta===1?0.5:0;
+                   const sporco = (L===1 || L%9===0) ? 3.5 : (Math.random()<0.08 ? 2.2 : 0);
+                   gg.push({l:L, t:+(base + eta*0.05 + freddo + sporco + (Math.random()-0.5)*0.25).toFixed(3)});
+                 }
+                 return [String(c.i), gg];
+               })),
+              derivati: Object.fromEntries(cars.map(c=>[String(c.i),
+                 {stint: 4+(c.i%3), soste: c.i%3, passo: +(108.2+(c.i%5)*0.4).toFixed(3),
+                  pit_durata: c.i%3? 32.4 : null, in_pit_da: c.pit? 12.3 : null}])),
               sessione:{tipo:"Race", pista:"Autodromo Nazionale Monza", auto:"Mazda MX-5 Cup",
-                        tempoRimasto:1800, giriRimasti:16, airTemp:24.5, trackTemp:37.0},
+                        tempoRimasto:1800, giriRimasti:16, airTemp:24.5, trackTemp:37.0,
+                        pioggia:0, bagnato:1, umidita:0.42, vento:2.5, ventoDir:1.2},
               mia:{fuel:31.4, wear_lf:0.92, wear_rf:0.93, wear_lr:0.95, wear_rr:0.96,
                    temp_lf:83, temp_rf:85, temp_lr:80, temp_rr:82}};
     }
@@ -1018,9 +1137,185 @@ async function viewPitwall(){
   await costruisciCalcolatore();
 }
 
-/* ---------- Pitwall: vista dal vivo ---------- */
+/* ---------- Tabelle configurabili: colonne, ordine, ordinamento ---------- */
+// Un unico meccanismo usato da tutte le tabelle: quali colonne mostrare, in che ordine
+// (trascinando l'intestazione oppure con le frecce, che funzionano anche da telefono) e con
+// quale ordinamento. Tutto viene ricordato nel browser, separatamente per ogni tabella.
+const TAB = {
+  stato(chiave, colonne){
+    let s = null;
+    try { s = JSON.parse(localStorage.getItem("tab_" + chiave) || "null"); } catch(e){}
+    const chiavi = colonne.map(c => c.k);
+    if (!s) s = {};
+    // ordine: parto da quello salvato, aggiungo le colonne nuove e tolgo quelle sparite
+    let ordine = (s.ordine || []).filter(k => chiavi.includes(k));
+    chiavi.forEach(k => { if (!ordine.includes(k)) ordine.push(k); });
+    const nascoste = new Set((s.nascoste || []).filter(k => chiavi.includes(k)));
+    return {ordine, nascoste, sort: s.sort || null};
+  },
+  salva(chiave, st){
+    try {
+      localStorage.setItem("tab_" + chiave, JSON.stringify(
+        {ordine: st.ordine, nascoste: [...st.nascoste], sort: st.sort}));
+    } catch(e){}
+  },
+  attive(st, colonne){
+    return st.ordine.map(k => colonne.find(c => c.k === k))
+                    .filter(c => c && (c.fisso || !st.nascoste.has(c.k)));
+  },
+  // Intestazione con maniglia di trascinamento e freccia dell'ordinamento
+  th(c, st){
+    const dir = st.sort && st.sort.k === c.k ? st.sort.dir : 0;
+    const freccia = dir === 1 ? " ▲" : dir === -1 ? " ▼" : "";
+    return `<th draggable="true" data-col="${c.k}" class="${c.ord?"ordina":""} ${dir?"ordinata":""}"
+      title="${c.ord?"Clicca per ordinare · trascina per spostare":"Trascina per spostare"}">${esc(c.t)}${freccia}</th>`;
+  },
+  menu(st, colonne, chiave){
+    const opz = st.ordine.map(k => colonne.find(c => c.k === k)).filter(Boolean);
+    const nascoste = opz.filter(c => !c.fisso && st.nascoste.has(c.k)).length;
+    return `<div class="chansel">
+      <button class="chanbtn" id="colbtn_${chiave}">Colonne <span>(${opz.length-nascoste}/${opz.length})</span> ▾</button>
+      <div class="chanmenu colmenu" id="colmenu_${chiave}" hidden>
+        ${opz.map((c,i)=>`<div class="colrow">
+          <label><input type="checkbox" data-vis="${c.k}" ${c.fisso?"disabled":""}
+            ${c.fisso||!st.nascoste.has(c.k)?"checked":""}><span>${esc(c.t||"—")}</span></label>
+          <span class="colmove">
+            <button data-su="${c.k}" ${i===0?"disabled":""}>▲</button>
+            <button data-giu="${c.k}" ${i===opz.length-1?"disabled":""}>▼</button>
+          </span></div>`).join("")}
+        <button class="btn small ghost" id="colreset_${chiave}" style="margin:8px 6px 4px">Ripristina ordine</button>
+      </div></div>`;
+  },
+  // Collega tutti i comportamenti: menu, frecce, trascinamento, click di ordinamento
+  attiva(root, chiave, colonne, st, ridisegna){
+    const btn = root.querySelector("#colbtn_" + chiave);
+    const menu = root.querySelector("#colmenu_" + chiave);
+    if (btn && menu){
+      btn.onclick = () => { menu.hidden = !menu.hidden; };
+      menu.querySelectorAll("[data-vis]").forEach(k => k.onchange = () => {
+        if (k.checked) st.nascoste.delete(k.dataset.vis); else st.nascoste.add(k.dataset.vis);
+        TAB.salva(chiave, st); ridisegna();
+      });
+      const sposta = (k, delta) => {
+        const i = st.ordine.indexOf(k), j = i + delta;
+        if (i < 0 || j < 0 || j >= st.ordine.length) return;
+        st.ordine.splice(j, 0, st.ordine.splice(i, 1)[0]);
+        TAB.salva(chiave, st); ridisegna();
+      };
+      menu.querySelectorAll("[data-su]").forEach(b => b.onclick = () => sposta(b.dataset.su, -1));
+      menu.querySelectorAll("[data-giu]").forEach(b => b.onclick = () => sposta(b.dataset.giu, 1));
+      const rs = root.querySelector("#colreset_" + chiave);
+      if (rs) rs.onclick = () => {
+        st.ordine = colonne.map(c=>c.k); st.nascoste = new Set(); st.sort = null;
+        TAB.salva(chiave, st); ridisegna();
+      };
+    }
+    // ordinamento al click sull'intestazione
+    root.querySelectorAll("th[data-col]").forEach(th => {
+      const c = colonne.find(x => x.k === th.dataset.col);
+      if (c && c.ord) th.onclick = e => {
+        if (th.dataset.trascinato) { delete th.dataset.trascinato; return; }
+        const cur = st.sort && st.sort.k === c.k ? st.sort.dir : 0;
+        st.sort = cur === 1 ? {k:c.k, dir:-1} : cur === -1 ? null : {k:c.k, dir:1};
+        TAB.salva(chiave, st); ridisegna();
+      };
+      // trascinamento per riordinare
+      th.ondragstart = e => { e.dataTransfer.setData("text/plain", th.dataset.col); th.classList.add("trascino"); };
+      th.ondragend = () => th.classList.remove("trascino");
+      th.ondragover = e => { e.preventDefault(); th.classList.add("sopra"); };
+      th.ondragleave = () => th.classList.remove("sopra");
+      th.ondrop = e => {
+        e.preventDefault(); th.classList.remove("sopra");
+        const da = e.dataTransfer.getData("text/plain"), a = th.dataset.col;
+        if (!da || da === a) return;
+        const i = st.ordine.indexOf(da), j = st.ordine.indexOf(a);
+        if (i < 0 || j < 0) return;
+        st.ordine.splice(j, 0, st.ordine.splice(i, 1)[0]);
+        th.dataset.trascinato = "1";
+        TAB.salva(chiave, st); ridisegna();
+      };
+    });
+  },
+  // Applica l'ordinamento scelto a un elenco di righe
+  ordina(righe, st, colonne){
+    if (!st.sort) return righe;
+    const c = colonne.find(x => x.k === st.sort.k);
+    if (!c || !c.ord) return righe;
+    const v = r => { const x = c.ord(r); return (x == null || Number.isNaN(x)) ? null : x; };
+    return righe.slice().sort((a,b) => {
+      const va = v(a), vb = v(b);
+      // I valori mancanti restano SEMPRE in fondo, anche invertendo l'ordine
+      if (va == null && vb == null) return 0;
+      if (va == null) return 1;
+      if (vb == null) return -1;
+      if (typeof va === "string" || typeof vb === "string")
+        return String(va).localeCompare(String(vb)) * st.sort.dir;
+      return (va - vb) * st.sort.dir;
+    });
+  }
+};
+
+/* ---------- Ricostruzione della forma del tracciato (usata da telemetria e Pitwall) ---------- */
+function ricostruisciTracciato(l){
+  // iRacing non fornisce le coordinate GPS (verificato: non esistono fra le 354 variabili).
+  // Fornisce però velocità e direzione, e da quelle la traiettoria si ricava per integrazione.
+  // Tre metodi in ordine di precisione: il primo usa la direzione MISURATA rispetto al nord,
+  // quindi non accumula errore di rotazione.
+  const ch = l.ch, n = (ch.lapdist || []).length;
+  if (!n || !l.time_s) return null;
+  const dt = l.time_s / n;
+  const X = [], Y = [];
+  let x = 0, y = 0;
+
+  if (ch.velx && ch.vely && ch.yaw && ch.yaw.some(v => v != null)){
+    // METODO MIGLIORE: velocità dell'auto ruotata secondo la direzione assoluta.
+    // ATTENZIONE alla convenzione: YawNorth è una BUSSOLA (l'angolo cresce in senso orario
+    // partendo da nord), non un angolo matematico (antiorario da est). Trattarlo come
+    // matematico produceva una mappa SPECCHIATA: chi andava a nord si spostava a destra.
+    // Con la bussola: direzione di marcia = (sin, cos) su (est, nord).
+    for (let i=0;i<n;i++){
+      const vx = ch.velx[i], vy = ch.vely[i], a = ch.yaw[i];
+      if (vx != null && vy != null && a != null){
+        x += (vx * Math.sin(a) + vy * Math.cos(a)) * dt;   // est
+        y += (vx * Math.cos(a) - vy * Math.sin(a)) * dt;   // nord
+      }
+      X.push(x); Y.push(y);
+    }
+  } else {
+    // RIPIEGO: direzione ricavata dalla rotazione o dall'accelerazione laterale
+    const sp = ch.speed, la = ch.lataccel, yr = ch.yawrate;
+    if (!sp) return null;
+    const usaYaw = yr && yr.some(v => v != null && Math.abs(v) > 1e-4);
+    if (!usaYaw && !la) return null;
+    let psi = 0;
+    for (let i=0;i<n;i++){
+      const v = sp[i];
+      if (v != null && v > 1){
+        // stessa convenzione a bussola: psi cresce in senso orario partendo da nord
+        psi += usaYaw && yr[i] != null ? -yr[i] * dt : -((la[i] != null ? la[i] : 0) / v) * dt;
+        x += Math.sin(psi) * v * dt;   // est
+        y += Math.cos(psi) * v * dt;   // nord
+      }
+      X.push(x); Y.push(y);
+    }
+  }
+  // il giro è chiuso: distribuisco lungo il percorso il piccolo errore di chiusura
+  const ex = X[n-1]-X[0], ey = Y[n-1]-Y[0];
+  for (let i=0;i<n;i++){ const f = i/(n-1); X[i] -= ex*f; Y[i] -= ey*f; }
+  if (Math.max(...X)-Math.min(...X) < 1e-6) return null;
+  return {lat: Y, lon: X, ricostruito: true};
+}
+
+
+/* ---------- Pitwall: barra fissa + schede ---------- */
 let livePoll = null, liveOutline = null, liveTrack = null, livePilot = null;
+let liveIoId = null, liveSel = [], liveParams = null;
+function chiSonoIo(id){ return id === liveIoId; }
 function fermaLive(){ clearInterval(livePoll); livePoll = null; }
+
+// Colori per classe: nelle gare multiclasse serve distinguere a colpo d'occhio chi sta arrivando
+const CLASSE_COL = ["#e10600","#8ab4ff","#35d07f","#f2b63d","#c07bff","#ff8a3d"];
+const colClasse = cl => cl == null ? "#c9c9d1" : CLASSE_COL[Math.abs(cl) % CLASSE_COL.length];
 
 async function avviaLive(){
   fermaLive();
@@ -1031,152 +1326,726 @@ async function avviaLive(){
   if (!chi.length){
     host.innerHTML = `<div class="board"><div class="ctx">Nessuna sessione in corso</div>
       <p class="warnbox">Avvia il programma sul PC di gara ed entra in pista: qui compariranno la
-      classifica dal vivo, le posizioni in pista e i dati della tua auto.
-      Vedrai anche le sessioni dei tuoi compagni di team, così qualcuno può farti da ingegnere da casa.</p></div>`;
+      torre di controllo con la minimappa, la classifica dal vivo e i dati della tua auto.
+      Vedrai anche le sessioni dei compagni di team, così qualcuno può farti da muretto da casa.</p></div>`;
     return;
   }
   const io = chi.find(c=>c.is_me);
   liveIoId = io ? io.id : null;
   if (!livePilot || !chi.some(c=>c.id===livePilot)) livePilot = chi[0].id;
+
   host.innerHTML = `
-    ${chi.length>1 ? `<div class="board" style="margin-bottom:12px"><div class="ctx">Chi seguire</div>
-      <div class="pwsel"><select id="lvwho" class="txtin">${chi.map(c=>`<option value="${c.id}" ${c.id===livePilot?"selected":""}>${esc(c.name)}${c.is_me?" (io)":""} · ${esc(c.sessione||"")}</option>`).join("")}</select></div></div>` : ""}
+    ${chi.length>1 ? `<div class="pwsel" style="margin-bottom:10px">
+      <select id="lvwho" class="txtin">${chi.map(c=>`<option value="${c.id}" ${c.id===livePilot?"selected":""}>${esc(c.name)}${c.is_me?" (io)":""} · ${esc(c.sessione||"")}</option>`).join("")}</select></div>` : ""}
+
+    <div class="hud" id="hud">
+      <div class="hudmap"><canvas id="lvmap"></canvas><div class="lvbar" id="lvbar" hidden></div></div>
+      <div class="hudside">
+        <div class="hudmeteo" id="hudmeteo"></div>
+        <div class="ghost" id="ghost"></div>
+      </div>
+    </div>
+
+    <div class="tabbar tabsub">
+      <button class="tabbtn on" data-lv="timing">Overview &amp; Timing</button>
+      <button class="tabbtn" data-lv="strategia">Strategia</button>
+      <button class="tabbtn" data-lv="meteo">Meteo &amp; Pista</button>
+      <button class="tabbtn" data-lv="storico">Analisi giri</button>
+    </div>
     <div id="lvbody"><div class="empty">Collegamento…</div></div>`;
+
   const sel = document.getElementById("lvwho");
-  if (sel) sel.onchange = () => { livePilot = sel.value; liveOutline = null; liveTrack = null; aggiornaLive(); };
+  if (sel) sel.onchange = () => { livePilot = sel.value; liveOutline = null; liveTrack = null; liveSel = []; aggiornaLive(); };
+  host.querySelectorAll("[data-lv]").forEach(b => b.onclick = () => {
+    host.querySelectorAll("[data-lv]").forEach(x => x.classList.toggle("on", x===b));
+    lvTab = b.dataset.lv; aggiornaLive();
+  });
   await aggiornaLive();
-  livePoll = setInterval(aggiornaLive, 1000);   // una volta al secondo: il ritardo utile è ~1s
+  livePoll = setInterval(() => { if (!liveInPausa) aggiornaLive(); }, 1000);
 }
+let lvTab = "timing";
+let liveInPausa = false;   // congela l'aggiornamento per leggere con calma
 
 async function aggiornaLive(){
   const body = document.getElementById("lvbody");
   if (!body) { fermaLive(); return; }
+  const mio = chiSonoIo(livePilot);
   let d;
-  const mio = livePilot && chiSonoIo(livePilot);
   try { d = await api("live" + (mio ? "" : `?pilot=${encodeURIComponent(livePilot)}`)); }
   catch(e){ body.innerHTML = `<div class="err">Impossibile leggere lo stato dal vivo.</div>`; return; }
+  const hud = document.getElementById("hud");
   if (!d.attivo){
+    if (hud) hud.style.display = "none";
     body.innerHTML = `<div class="board"><div class="ctx">Sessione non attiva</div>
       <p class="warnbox">${esc(d.motivo || "nessun dato")}${d.fermo_da?` · fermo da ${d.fermo_da} s`:""}</p></div>`;
     return;
   }
-  const S = d.sessione || {}, cars = d.cars || [];
+  if (hud) hud.style.display = "";
+
+  const S = d.sessione || {}, cars = d.cars || [], der = d.derivati || {};
   const nomi = {}; (d.piloti||[]).forEach(p => nomi[p.i] = p);
-  // sagoma del tracciato: la chiedo una volta sola per pista
   if (S.pista && liveTrack !== S.pista){
     liveTrack = S.pista;
-    liveOutline = await api(`track-outline?name=${encodeURIComponent(S.pista)}` + (mio?"":`&pilot=${encodeURIComponent(livePilot)}`)).catch(()=>({disponibile:false}));
+    const grezzo = await api(`track-outline?name=${encodeURIComponent(S.pista)}`
+      + (mio?"":`&pilot=${encodeURIComponent(livePilot)}`)).catch(()=>({disponibile:false}));
+    // La forma si ricostruisce qui con la STESSA funzione della telemetria: una sola matematica,
+    // gia' verificata, invece di due versioni che rischiano di divergere.
+    liveOutline = {disponibile:false};
+    if (grezzo && grezzo.disponibile && grezzo.canali){
+      const c = grezzo.canali;
+      const geo = ricostruisciTracciato({ch:c, n:(c.lapdist||[]).length, time_s:grezzo.time_s});
+      if (geo && geo.lat && geo.lat.length > 20)
+        liveOutline = {disponibile:true,
+          punti: geo.lat.map((la,i)=>({d:c.lapdist[i], lat:la, lon:geo.lon[i]}))};
+    }
+    // Cerco nell'archivio i parametri misurati per QUESTA auto su QUESTA pista: servono alla
+    // Ghost Car e alla strategia. L'auto e la pista arrivano come nomi, quindi li abbino così.
+    liveParams = null;
+    try {
+      const cars = await api("cars" + (mio?"":`?pilot=${encodeURIComponent(livePilot)}`));
+      const auto = cars.find(c => S.auto && c.name.toLowerCase() === S.auto.toLowerCase()) || cars[0];
+      if (auto){
+        const trs = await api(`cars/${auto.id}/tracks` + (mio?"":`?pilot=${encodeURIComponent(livePilot)}`));
+        const tr = trs.find(t => t.name.toLowerCase() === S.pista.toLowerCase());
+        if (tr) liveParams = await api(`strategy/params?car_id=${auto.id}&track_id=${tr.id}`);
+      }
+    } catch(e){}
   }
-  const ordinate = cars.slice().sort((a,b) => (a.p||99) - (b.p||99));
-  const leader = ordinate[0];
-  const giroDi = c => (c.l||0) + (c.d||0);
-  const gap = c => {
-    if (!leader || c === leader) return "—";
-    const g = giroDi(leader) - giroDi(c);
-    return g >= 1 ? `+${Math.floor(g)} giro${Math.floor(g)>1?"i":""}` : `${(g*100).toFixed(0)}%`;
-  };
-  const soste = d.soste || {};
-  const M = d.mia || {};
+  const ordinate = cars.slice().sort((a,b)=>(a.p||99)-(b.p||99));
+  disegnaHUD(d, ordinate, nomi, der, S);
 
-  body.innerHTML = `
-    <div class="board" style="margin-bottom:12px">
-      <div class="ctx">${esc(S.tipo||"Sessione")} · ${esc(S.pista||"")}${S.auto?" · "+esc(S.auto):""}
-        ${S.tempoRimasto!=null&&S.tempoRimasto<86400?" · resta "+fmtOre(S.tempoRimasto):""}
-        ${S.giriRimasti!=null&&S.giriRimasti<9999?" · "+S.giriRimasti+" giri":""}
-        ${S.airTemp!=null?" · 🌡️ "+S.airTemp.toFixed(0)+"°":""}${S.trackTemp!=null?" · 🛣️ "+S.trackTemp.toFixed(0)+"°":""}
-        <span class="lvdot">● aggiornato ${d.eta}s fa</span></div>
-    </div>
-
-    <div class="lvwrap">
-      <div class="board">
-        <div class="ctx">Posizioni in pista</div>
-        ${liveOutline && liveOutline.disponibile
-          ? `<canvas id="lvmap"></canvas>`
-          : `<div class="lvbar" id="lvbar"></div>
-             <div class="telhint">Sagoma del tracciato non disponibile: serve un giro in archivio con le coordinate. Qui la pista è srotolata: sinistra = traguardo.</div>`}
-      </div>
-
-      <div class="board">
-        <div class="ctx">La mia auto</div>
-        <div class="lvme">
-          <div><span>Carburante</span><b>${M.fuel!=null?M.fuel.toFixed(1)+" L":"—"}</b></div>
-          <div><span>Usura AS/AD</span><b>${pc(M.wear_lf)} / ${pc(M.wear_rf)}</b></div>
-          <div><span>Usura PS/PD</span><b>${pc(M.wear_lr)} / ${pc(M.wear_rr)}</b></div>
-          <div><span>Temp. ant.</span><b>${M.temp_lf!=null?M.temp_lf.toFixed(0)+"°":"—"} / ${M.temp_rf!=null?M.temp_rf.toFixed(0)+"°":"—"}</b></div>
-          <div><span>Temp. post.</span><b>${M.temp_lr!=null?M.temp_lr.toFixed(0)+"°":"—"} / ${M.temp_rr!=null?M.temp_rr.toFixed(0)+"°":"—"}</b></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="board" style="margin-top:12px">
-      <div class="ctx">Classifica</div>
-      <table class="pwtab"><thead><tr><th>Pos</th><th>Pilota</th><th>Giro</th><th>Ultimo</th><th>Migliore</th><th>Distacco</th><th>Gomme</th></tr></thead><tbody>
-      ${ordinate.map(c => {
-        const p = nomi[c.i] || {};
-        const st = soste[String(c.i)] || [];
-        const daGiri = st.length ? (c.l - st[st.length-1]) : c.l;
-        return `<tr class="${c.i===d.me?"lvme-row":""} ${c.pit?"lvpit":""}">
-          <td class="pwnum">${c.p||"-"}</td>
-          <td>${p.num?`<span class="lvnum">${esc(String(p.num))}</span>`:""}${esc(p.n||("Auto "+c.i))}${c.pit?' <span class="lvtag">BOX</span>':""}</td>
-          <td class="pwnum">${c.l||0}</td>
-          <td class="pwnum">${c.lt?fmt(c.lt):"—"}</td>
-          <td class="pwnum">${c.bt?fmt(c.bt):"—"}</td>
-          <td class="pwnum">${gap(c)}</td>
-          <td class="pwnum">${st.length?`${st.length} sost${st.length==1?"a":"e"} · ${daGiri} giri`:`${daGiri} giri`}</td>
-        </tr>`;
-      }).join("")}
-      </tbody></table>
-      <div class="telhint">Le soste degli avversari sono <b>dedotte</b> dai passaggi in corsia box: iRacing non fornisce gomme e benzina delle altre auto.</div>
-    </div>`;
-
-  if (liveOutline && liveOutline.disponibile) disegnaLiveMappa(cars, nomi, d.me);
-  else disegnaLiveBarra(cars, nomi, d.me);
+  if (lvTab === "timing") renderTiming(body, d, ordinate, nomi, der);
+  else if (lvTab === "strategia") renderStrategia(body, d, ordinate, der);
+  else if (lvTab === "meteo") renderMeteo(body, S);
+  else renderStorico(body, d, ordinate, nomi, der);
 }
 
-const pc = v => v!=null ? Math.round(v*100)+"%" : "—";
-const fmtOre = s => { s=Math.max(0,Math.round(s)); const m=Math.floor(s/60); return m>=60?`${Math.floor(m/60)}h${String(m%60).padStart(2,"0")}`:`${m}:${String(s%60).padStart(2,"0")}`; };
-let liveIoId = null;                       // id del pilota che sono io, dal server
-function chiSonoIo(id){ return id === liveIoId; }
+/* ---- Torre di controllo: minimappa, meteo, ghost car ---- */
+function disegnaHUD(d, ordinate, nomi, der, S){
+  const me = d.me;
+  // meteo
+  const mt = document.getElementById("hudmeteo");
+  const bagn = S.bagnato != null ? ["asciutto","quasi asciutto","umido","bagnato","molto bagnato","allagato"][Math.min(5,Math.max(0,(S.bagnato|0)-1))] : null;
+  if (mt) mt.innerHTML = `
+    <div class="mtitem"><span>Aria</span><b>${S.airTemp!=null?S.airTemp.toFixed(1)+"°":"—"}</b></div>
+    <div class="mtitem"><span>Asfalto</span><b>${S.trackTemp!=null?S.trackTemp.toFixed(1)+"°":"—"}</b></div>
+    <div class="mtitem"><span>Pista</span><b>${bagn?esc(bagn):"—"}</b></div>
+    <div class="mtitem"><span>Pioggia</span><b>${S.pioggia!=null?Math.round(S.pioggia*100)+"%":"—"}</b></div>
+    <div class="mtitem"><span>Vento</span><b>${S.vento!=null?(S.vento*3.6).toFixed(0)+" km/h":"—"} ${S.ventoDir!=null?frecciaVento(S.ventoDir):""}</b></div>
+    <div class="mtitem"><span>Resta</span><b>${S.tempoRimasto!=null&&S.tempoRimasto<86400?fmtOre(S.tempoRimasto):(S.giriRimasti!=null&&S.giriRimasti<9999?S.giriRimasti+" giri":"—")}</b></div>`;
 
-function disegnaLiveMappa(cars, nomi, meIdx){
+  // ghost car: dove rientrerei se mi fermassi adesso
+  const g = document.getElementById("ghost");
+  const mia = ordinate.find(c=>c.i===me);
+  const perdita = (liveParams && liveParams.pit_loss) || 30;
+  let ghostD = null;
+  if (mia && g){
+    const tot = c => (c.l||0) + (c.d||0);
+    const mioDopo = tot(mia) + 0.02;              // il tratto percorso in corsia box
+    let davanti = 0, tra = [];
+    ordinate.forEach(c => {
+      if (c.i === me) return;
+      const suo = tot(c) + (c.lt ? perdita / c.lt : 0);   // avanzano mentre sono fermo
+      if (suo > mioDopo) davanti++;
+    });
+    const posDopo = davanti + 1;
+    const vicini = ordinate.filter(c=>c.i!==me)
+      .map(c => ({c, t: tot(c) + (c.lt ? perdita / c.lt : 0)}))
+      .sort((a,b)=>b.t-a.t);
+    const sopra = vicini.filter(v=>v.t>mioDopo).pop();
+    const sotto = vicini.filter(v=>v.t<=mioDopo)[0];
+    ghostD = (mia.d + 0.02) % 1;
+    g.innerHTML = `<div class="ghhead">Se rientro adesso</div>
+      <div class="ghpos">P${posDopo}<span>${mia.p&&posDopo>mia.p?` (${posDopo-mia.p} in meno)`:mia.p&&posDopo<mia.p?` (${mia.p-posDopo} in più)`:""}</span></div>
+      <div class="ghtra">${sopra?`dietro a <b>${esc((nomi[sopra.c.i]||{}).n||"?")}</b>`:"in testa"}${sotto?`<br>davanti a <b>${esc((nomi[sotto.c.i]||{}).n||"?")}</b>`:""}</div>
+      <div class="ghnote">perdita stimata ${perdita.toFixed(0)} s</div>`;
+  } else if (g) g.innerHTML = "";
+
+  if (liveOutline && liveOutline.disponibile) disegnaMappa(ordinate, nomi, me, ghostD);
+  else disegnaBarra(ordinate, nomi, me, ghostD);
+  ridimensionabile(document.querySelector(".hudmap"), "hud_mappa",
+    () => { if (liveOutline && liveOutline.disponibile) disegnaMappa(ordinate, nomi, me, ghostD); });
+}
+const frecciaVento = rad => {
+  const dirs = ["↑N","↗NE","→E","↘SE","↓S","↙SO","←O","↖NO"];
+  return dirs[Math.round(((rad%(2*Math.PI))/(2*Math.PI))*8)%8];
+};
+const fmtOre = s => { s=Math.max(0,Math.round(s)); const m=Math.floor(s/60);
+  return m>=60?`${Math.floor(m/60)}h${String(m%60).padStart(2,"0")}`:`${m}:${String(s%60).padStart(2,"0")}`; };
+const pc = v => v!=null ? Math.round(v*100)+"%" : "—";
+
+function disegnaMappa(cars, nomi, meIdx, ghostD){
   const cv = document.getElementById("lvmap"); if (!cv) return;
+  document.getElementById("lvbar").hidden = true; cv.hidden = false;
   const pts = liveOutline.punti;
-  const dpr = Math.min(window.devicePixelRatio||1, 2), H = 300;
+  const dpr = Math.min(window.devicePixelRatio||1,2);
+  const H = Math.max(140, Math.round((cv.parentElement.clientHeight || 276) - 16));
   cv.style.width="100%"; cv.style.height=H+"px";
   cv.width = cv.clientWidth*dpr; cv.height = H*dpr;
   const ctx = cv.getContext("2d"); ctx.scale(dpr,dpr);
-  const w = cv.clientWidth, pad = 18;
-  const las = pts.map(p=>p.lat), los = pts.map(p=>p.lon);
-  const laMin=Math.min(...las), laMax=Math.max(...las), loMin=Math.min(...los), loMax=Math.max(...los);
-  const kx = Math.cos((laMin+laMax)/2*Math.PI/180) || 1;
-  const sc = Math.min((w-2*pad)/(((loMax-loMin)*kx)||1), (H-2*pad)/((laMax-laMin)||1));
-  const cx = w/2, cy = H/2, midLo=(loMin+loMax)/2, midLa=(laMin+laMax)/2;
-  const X = lo => cx + (lo-midLo)*kx*sc, Y = la => cy - (la-midLa)*sc;
+  const w = cv.clientWidth, pad = 20;
+  const las=pts.map(p=>p.lat), los=pts.map(p=>p.lon);
+  const laMin=Math.min(...las),laMax=Math.max(...las),loMin=Math.min(...los),loMax=Math.max(...los);
+  const sc = Math.min((w-2*pad)/((loMax-loMin)||1), (H-2*pad)/((laMax-laMin)||1));
+  const cx=w/2, cy=H/2, midLo=(loMin+loMax)/2, midLa=(laMin+laMax)/2;
+  const X=lo=>cx+(lo-midLo)*sc, Y=la=>cy-(la-midLa)*sc;
+  const at = dd => { let b=pts[0], bd=9; pts.forEach(p=>{const q=Math.abs(p.d-dd); if(q<bd){bd=q;b=p;}}); return b; };
   ctx.clearRect(0,0,w,H);
   ctx.strokeStyle="#3a3a40"; ctx.lineWidth=3; ctx.beginPath();
   pts.forEach((p,i)=> i?ctx.lineTo(X(p.lon),Y(p.lat)):ctx.moveTo(X(p.lon),Y(p.lat)));
   ctx.closePath(); ctx.stroke();
-  // auto collocate sulla sagoma in base alla frazione di giro
+  if (ghostD != null){
+    const p = at(ghostD);
+    ctx.setLineDash([3,3]); ctx.strokeStyle="#fff"; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(X(p.lon),Y(p.lat),9,0,7); ctx.stroke(); ctx.setLineDash([]);
+  }
   cars.forEach(c => {
-    let best=pts[0], bd=9;
-    pts.forEach(p=>{ const dd=Math.abs(p.d-(c.d||0)); if(dd<bd){bd=dd;best=p;} });
-    const x=X(best.lon), y=Y(best.lat);
-    const io = c.i===meIdx;
-    ctx.fillStyle = io ? "#e10600" : (c.pit ? "#f2b63d" : "#c9c9d1");
-    ctx.beginPath(); ctx.arc(x,y, io?7:5, 0, 7); ctx.fill();
-    ctx.strokeStyle="#0b0b0c"; ctx.lineWidth=1.5; ctx.stroke();
-    const p = nomi[c.i]||{};
-    if (p.num){ ctx.fillStyle="#0b0b0c"; ctx.font="700 8px 'Chivo Mono',monospace";
-      ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(String(p.num), x, y+0.5); ctx.textAlign="start"; }
+    const p = at(c.d||0), x=X(p.lon), y=Y(p.lat);
+    const io = c.i===meIdx, ev = liveSel.includes(c.i);
+    ctx.fillStyle = io ? "#fff" : colClasse(c.cl);
+    ctx.globalAlpha = c.pit ? .45 : 1;
+    ctx.beginPath(); ctx.arc(x,y, io?8:(ev?7:5), 0, 7); ctx.fill(); ctx.globalAlpha=1;
+    ctx.strokeStyle = ev ? "#fff" : "#0b0b0c"; ctx.lineWidth = ev?2.5:1.5; ctx.stroke();
+    const nm=nomi[c.i]||{};
+    if (nm.num && (io||ev)){ ctx.fillStyle="#0b0b0c"; ctx.font="700 8px 'Chivo Mono',monospace";
+      ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(String(nm.num),x,y+0.5); ctx.textAlign="start"; }
+  });
+}
+function disegnaBarra(cars, nomi, meIdx, ghostD){
+  const cv=document.getElementById("lvmap"), host=document.getElementById("lvbar");
+  if (!host) return; cv.hidden=true; host.hidden=false;
+  host.innerHTML = cars.map(c=>{
+    const nm=nomi[c.i]||{}, io=c.i===meIdx, ev=liveSel.includes(c.i);
+    return `<span class="lvcar ${io?"io":""} ${ev?"ev":""} ${c.pit?"box":""}"
+      style="left:${((c.d||0)*100).toFixed(2)}%;background:${io?"#fff":colClasse(c.cl)}"
+      title="${esc(nm.n||"")}">${esc(String(nm.num||c.i))}</span>`;
+  }).join("") + (ghostD!=null?`<span class="lvghost" style="left:${(ghostD*100).toFixed(2)}%">◌</span>`:"");
+}
+
+
+/* ---- Scheda 1: Overview & Timing ---- */
+let liveClassi = null;
+try { const r = localStorage.getItem("classiVisibili");
+      if (r) liveClassi = new Set(JSON.parse(r)); } catch(e){}
+function salvaClassi(){
+  try {
+    if (liveClassi) localStorage.setItem("classiVisibili", JSON.stringify([...liveClassi]));
+    else localStorage.removeItem("classiVisibili");
+  } catch(e){}
+}
+function nomiClassi(ordinate, nomi){
+  const conta = {};
+  ordinate.forEach(c => {
+    const k = String(c.cl), m = (nomi[c.i]||{}).auto || "?";
+    conta[k] = conta[k] || {}; conta[k][m] = (conta[k][m]||0) + 1;
+  });
+  const out = {};
+  Object.entries(conta).forEach(([k,mod]) => { out[k] = Object.entries(mod).sort((a,b)=>b[1]-a[1])[0][0]; });
+  return out;
+}
+
+// Colonne della classifica. "ord" indica come ordinare quella colonna (assente = non ordinabile).
+const COL_TIMING = [
+  {k:"sel",    t:"",              fisso:true},
+  {k:"pos",    t:"Pos",           ord:r=>r.c.p},
+  {k:"clpos",  t:"Cl.",           ord:r=>r.c.cp},
+  {k:"pilota", t:"Pilota",        ord:r=>(r.p.n||"").toLowerCase()},
+  {k:"cat",    t:"Categoria",     ord:r=>r.cat},
+  {k:"giro",   t:"Giro",          ord:r=>r.c.l},
+  {k:"ultimo", t:"Ultimo",        ord:r=>r.c.lt},
+  {k:"best",   t:"Migliore",      ord:r=>r.c.bt},
+  {k:"passo",  t:"Passo",         ord:r=>r.D.passo},
+  {k:"gapcl",  t:"Da leader cl.", ord:r=>r.gapCl},
+  {k:"gapprec",t:"Precedente",    ord:r=>r.gapPrec},
+  {k:"stint",  t:"Stint",         ord:r=>r.D.stint},
+  {k:"box",    t:"Box",           ord:r=>r.D.pit_durata},
+];
+
+function renderTiming(body, d, ordinate, nomi, der){
+  const me = d.me;
+  const etichette = nomiClassi(ordinate, nomi);
+  const classi = [...new Set(ordinate.map(c=>String(c.cl)))];
+  const visibile = c => !liveClassi || liveClassi.has(String(c.cl)) || c.i === me;
+  const inGara = ordinate.filter(visibile);          // gia' in ordine di posizione
+
+  const leaderCl = {};
+  ordinate.forEach(c => { const k = String(c.cl); if (!(k in leaderCl)) leaderCl[k] = c; });
+  const tot = c => (c.l||0)+(c.d||0);
+  const secondi = (a,b) => {
+    if (!a||!b||a===b) return null;
+    const g = tot(b)-tot(a), rif = b.lt || a.lt;
+    if (Math.abs(g) >= 1) return Math.trunc(g)*10000;   // giri di distacco: valore grande, ordina in fondo
+    return rif ? Math.abs(g)*rif : Math.abs(g)*100;
+  };
+  const testoGap = (a,b) => {
+    if (!a||!b||a===b) return "—";
+    const g = tot(b)-tot(a);
+    if (Math.abs(g) >= 1) return `+${Math.trunc(Math.abs(g))} giri`;
+    const rif = b.lt || a.lt;
+    return rif ? `+${(Math.abs(g)*rif).toFixed(1)}` : `+${(Math.abs(g)*100).toFixed(0)}%`;
+  };
+
+  // Le righe si costruiscono SEMPRE sull'ordine di gara: cosi' il distacco dal precedente
+  // resta quello vero anche quando la tabella viene ordinata per un'altra colonna.
+  const righe = inGara.map((c,idx) => {
+    const p = nomi[c.i]||{}, D = der[String(c.i)]||{};
+    const cap = leaderCl[String(c.cl)], prec = idx>0 ? inGara[idx-1] : null;
+    return {c, p, D, io:c.i===me, cat:etichette[String(c.cl)]||"—", cap, prec,
+            gapCl: c===cap ? 0 : secondi(c,cap), gapPrec: prec ? secondi(c,prec) : null,
+            gapClTxt: c===cap ? "leader" : testoGap(c,cap),
+            gapPrecTxt: prec ? testoGap(c,prec) : "—"};
+  });
+
+  const st = TAB.stato("timing", COL_TIMING);
+  const cols = TAB.attive(st, COL_TIMING);
+  const mostrate = TAB.ordina(righe, st, COL_TIMING);
+
+  const cella = (col, r) => {
+    switch(col.k){
+      case "sel":    return `<td><input type="checkbox" class="lvchk" data-car="${r.c.i}" ${liveSel.includes(r.c.i)?"checked":""}></td>`;
+      case "pos":    return `<td class="pwnum">${r.c.p||"-"}</td>`;
+      case "clpos":  return `<td class="pwnum cl">${r.c.cp||"-"}</td>`;
+      case "pilota": return `<td><span class="clsdot" style="background:${colClasse(r.c.cl)}"></span>${r.p.num?`<span class="lvnum">${esc(String(r.p.num))}</span>`:""}<span class="lvname" data-car="${r.c.i}">${esc(r.p.n||("Auto "+r.c.i))}</span>${r.c.pit?' <span class="lvtag">BOX</span>':""}</td>`;
+      case "cat":    return `<td class="pwnum cls">${esc(r.cat)}</td>`;
+      case "giro":   return `<td class="pwnum">${r.c.l||0}</td>`;
+      case "ultimo": return `<td class="pwnum">${r.c.lt?fmt(r.c.lt):"—"}</td>`;
+      case "best":   return `<td class="pwnum best">${r.c.bt?fmt(r.c.bt):"—"}</td>`;
+      case "passo":  return `<td class="pwnum">${r.D.passo?fmt(r.D.passo):"—"}</td>`;
+      case "gapcl":  return `<td class="pwnum">${r.gapClTxt}</td>`;
+      case "gapprec":return `<td class="pwnum">${r.gapPrecTxt}</td>`;
+      case "stint":  return `<td class="pwnum">${r.D.stint!=null?r.D.stint:"—"}${r.D.soste?`<span class="cpos">${r.D.soste}</span>`:""}</td>`;
+      case "box":    return `<td class="pwnum">${r.D.in_pit_da!=null?`<b class="pitnow">${r.D.in_pit_da}s</b>`:(r.D.pit_durata!=null?r.D.pit_durata+"s":"—")}</td>`;
+    }
+    return "<td></td>";
+  };
+
+  body.innerHTML = `
+    <div class="board">
+      <div class="ctx">Classifica · ${righe.length} di ${ordinate.length} auto
+        <span class="lvdot">● aggiornato ${d.eta}s fa</span></div>
+      <div class="barrastrum">
+        <div class="chansel">
+          <button class="chanbtn" id="clsbtn">Categorie <span>(${liveClassi?liveClassi.size:classi.length}/${classi.length})</span> ▾</button>
+          <div class="chanmenu" id="clsmenu" hidden>
+            ${classi.map(k=>`<label class="chanrow"><input type="checkbox" data-cls="${k}"
+              ${!liveClassi||liveClassi.has(k)?"checked":""}>
+              <span class="clsdot" style="background:${colClasse(+k)}"></span>${esc(etichette[k]||("classe "+k))}</label>`).join("")}
+          </div>
+        </div>
+        ${TAB.menu(st, COL_TIMING, "timing")}
+        <button class="chanbtn ${liveInPausa?"inpausa":""}" id="pausabtn">${liveInPausa?"▶ Riprendi":"⏸ Pausa"}</button>
+      </div>
+
+      <div class="tabbox" id="timbox">
+      <table class="pwtab tim"><thead><tr>${cols.map(c=>TAB.th(c,st)).join("")}</tr></thead><tbody>
+      ${mostrate.map(r => `<tr class="${r.io?"lvme-row":""} ${r.c.pit?"lvpit":""} ${liveSel.includes(r.c.i)?"lvsel":""}">
+        ${cols.map(c=>cella(c,r)).join("")}</tr>`).join("")}
+      </tbody></table></div>
+      <div class="telhint">Trascina un'intestazione per spostare la colonna, cliccala per ordinare.
+      Il distacco è dal <b>leader della propria categoria</b>; la colonna "Precedente" resta
+      riferita a chi ti precede <b>in classifica</b> anche quando ordini per un'altra colonna.
+      La tua auto resta visibile anche nascondendo la sua categoria.
+      Le soste degli avversari sono <b>dedotte</b> dai passaggi in corsia box.</div>
+    </div>`;
+
+  const cb = document.getElementById("clsbtn"), cm = document.getElementById("clsmenu");
+  cb.onclick = () => { cm.hidden = !cm.hidden; };
+  cm.querySelectorAll("[data-cls]").forEach(k => k.onchange = () => {
+    if (!liveClassi) liveClassi = new Set(classi);
+    if (k.checked) liveClassi.add(k.dataset.cls); else liveClassi.delete(k.dataset.cls);
+    if (liveClassi.size === classi.length) liveClassi = null;
+    salvaClassi(); aggiornaLive();
+  });
+  document.getElementById("pausabtn").onclick = () => { liveInPausa = !liveInPausa; aggiornaLive(); };
+  TAB.attiva(body, "timing", COL_TIMING, st, () => aggiornaLive());
+  ridimensionabile(document.getElementById("timbox"), "classifica");
+  body.querySelectorAll(".lvname").forEach(n => n.onclick = () => {
+    stSel = [+n.dataset.car]; stDa = null; stA = null; lvTab = "storico";
+    document.querySelectorAll("[data-lv]").forEach(x => x.classList.toggle("on", x.dataset.lv==="storico"));
+    aggiornaLive();
+  });
+  body.querySelectorAll(".lvchk").forEach(k => k.onchange = () => {
+    const i = +k.dataset.car;
+    if (k.checked){ liveSel.push(i); if (liveSel.length>2) liveSel.shift(); }
+    else liveSel = liveSel.filter(x=>x!==i);
+    aggiornaLive();
   });
 }
 
-function disegnaLiveBarra(cars, nomi, meIdx){
-  const host = document.getElementById("lvbar"); if (!host) return;
-  host.innerHTML = cars.map(c => {
-    const p = nomi[c.i]||{}; const io = c.i===meIdx;
-    return `<span class="lvcar ${io?"io":""} ${c.pit?"box":""}" style="left:${((c.d||0)*100).toFixed(2)}%" title="${esc(p.n||"")}">${esc(String(p.num||c.i))}</span>`;
-  }).join("");
+/* ---- Scheda 2: Strategia dal vivo ---- */
+// Preferenze del pannello, ricordate fra una sessione e l'altra
+const STRAT_DEF = {margine:1.0, flow:2.5, gomme2:8, gomme4:13, simultaneo:true, freddo:1.2};
+function loadStrat(){
+  try { const r = localStorage.getItem("stratPrefs");
+        if (r) return {...STRAT_DEF, ...JSON.parse(r)}; } catch(e){}
+  return {...STRAT_DEF};
+}
+function saveStrat(p){ try { localStorage.setItem("stratPrefs", JSON.stringify(p)); } catch(e){} }
+let stratP = loadStrat();
+
+// Modello del giro: peso della benzina + degrado gomme + malus da gomme fredde.
+// Le gomme fredde costano molto sul giro di uscita, meno sul secondo, e dal terzo sono a regime.
+function tempoGiro(par, eta, benzina, freddo){
+  const malus = eta === 0 ? freddo : eta === 1 ? freddo*0.5 : eta === 2 ? freddo*0.2 : 0;
+  return par.base_time + par.k_fuel*benzina + par.deg*eta + malus;
+}
+// Durata della sosta: il rifornimento e il cambio gomme possono essere contemporanei o in fila
+function durataSosta(litri, gomme, cfg){
+  const tRif = litri * cfg.flow;
+  const tGom = gomme === 0 ? 0 : gomme === 2 ? cfg.gomme2 : cfg.gomme4;
+  return cfg.perdita + (cfg.simultaneo ? Math.max(tRif, tGom) : tRif + tGom);
+}
+// Simula il resto della gara con UNA sosta al giro indicato
+function simulaResto(giriRimasti, giroSosta, gomme, etaAttuale, benzinaOra, par, cfg){
+  let t = 0, eta = etaAttuale, f = benzinaOra;
+  const litriDopo = (giriRimasti - giroSosta) * par.fuel_per_lap + cfg.margine;
+  if (litriDopo > cfg.serbatoio) return null;
+  for (let i = 0; i < giroSosta; i++){
+    if (f < par.fuel_per_lap * 0.2) return null;      // resta a secco prima della sosta
+    t += tempoGiro(par, eta, f, cfg.freddo);
+    f -= par.fuel_per_lap; eta++;
+  }
+  t += durataSosta(litriDopo, gomme, cfg);
+  f = litriDopo;
+  if (gomme > 0) eta = 0;
+  for (let i = giroSosta; i < giriRimasti; i++){
+    t += tempoGiro(par, eta, f, cfg.freddo);
+    f -= par.fuel_per_lap; eta++;
+  }
+  return t;
+}
+
+function renderStrategia(body, d, ordinate, der){
+  const S = d.sessione || {}, M = d.mia || {};
+  const mia = ordinate.find(c => c.i === d.me);
+  const P = liveParams;
+  if (!P || !P.fuel_per_lap || !P.base_time){
+    body.innerHTML = `<div class="board"><div class="ctx">Parametri non disponibili</div>
+      <p class="warnbox">Per calcolare la strategia servono consumo e ritmo misurati dal tuo
+      archivio su questa pista con questa auto. Fai qualche giro salvato e torneranno da soli.</p></div>`;
+    return;
+  }
+  // giri rimanenti: espliciti se la gara è a giri, altrimenti stimati dal tempo
+  const ritmo = P.base_time + P.k_fuel * (M.fuel || 30);
+  let giriRimasti = (S.giriRimasti != null && S.giriRimasti < 9999) ? S.giriRimasti
+                  : (S.tempoRimasto != null && S.tempoRimasto < 86400 ? Math.ceil(S.tempoRimasto / ritmo) : null);
+  const stintOra = (der[String(d.me)] || {}).stint || 0;
+  const benzina = M.fuel;
+
+  const cfg = {...stratP, perdita: P.pit_loss != null ? Math.max(8, P.pit_loss - 12) : 20,
+               serbatoio: stratP.serbatoio || 100};
+
+  // --- benzina ---
+  let stato = "";
+  if (benzina != null && giriRimasti){
+    const serve = giriRimasti * P.fuel_per_lap + cfg.margine;
+    const diff = benzina - serve;
+    const giriPossibili = Math.floor((benzina - cfg.margine) / P.fuel_per_lap);
+    const risparmio = diff < 0 ? (-diff) / giriRimasti : 0;
+    stato = `
+      <div class="board" style="margin-bottom:12px">
+        <div class="ctx">Benzina</div>
+        <div class="pwgrid" style="padding-top:12px">
+          <div class="mtbig"><span>A bordo</span><b>${benzina.toFixed(1)} L</b></div>
+          <div class="mtbig"><span>Consumo</span><b>${P.fuel_per_lap.toFixed(2)} L/giro</b></div>
+          <div class="mtbig"><span>Autonomia</span><b>${giriPossibili} giri</b></div>
+          <div class="mtbig"><span>Serve per finire</span><b>${serve.toFixed(1)} L</b></div>
+          <div class="mtbig"><span>${diff>=0?"Avanza":"Manca"}</span><b class="${diff>=0?"okv":"kov"}">${Math.abs(diff).toFixed(1)} L</b></div>
+          <div class="mtbig"><span>Giri alla fine</span><b>${giriRimasti}</b></div>
+        </div>
+        ${diff < 0 ? `<p class="warnbox"><b>Lift &amp; coast:</b> per arrivare in fondo con
+          ${cfg.margine.toFixed(1)} L di margine devi risparmiare <b>${risparmio.toFixed(2)} L/giro</b>,
+          cioè circa il <b>${(risparmio/P.fuel_per_lap*100).toFixed(0)}%</b> del consumo attuale.
+          In alternativa serve una sosta.</p>`
+        : `<p class="warnbox">Con questo consumo arrivi in fondo senza fermarti, con
+          ${diff.toFixed(1)} L oltre il margine di sicurezza.</p>`}
+      </div>`;
+  }
+
+  // --- confronto strategie ---
+  let tabella = `<div class="empty">Servono i giri rimanenti per confrontare le strategie.</div>`;
+  if (giriRimasti && benzina != null){
+    const scenari = [
+      {nome:"Solo benzina", gomme:0},
+      {nome:"Benzina + 2 gomme", gomme:2},
+      {nome:"Benzina + 4 gomme", gomme:4},
+    ].map(sc => {
+      let best = null;
+      for (let g = 1; g <= giriRimasti - 1; g++){
+        const t = simulaResto(giriRimasti, g, sc.gomme, stintOra, benzina, P, cfg);
+        if (t != null && (best == null || t < best.t)) best = {t, g};
+      }
+      return {...sc, ...(best || {})};
+    });
+    const validi = scenari.filter(s => s.t != null);
+    const mig = validi.length ? validi.reduce((a,b)=>b.t<a.t?b:a) : null;
+    tabella = `
+      <div class="board">
+        <div class="ctx">Confronto strategie · ${giriRimasti} giri alla fine</div>
+        <table class="pwtab"><thead><tr>
+          <th>Scenario</th><th>Sosta al giro</th><th>Durata sosta</th><th>Tempo totale</th><th>Differenza</th>
+        </tr></thead><tbody>
+        ${scenari.map(s => {
+          if (s.t == null) return `<tr class="pwno"><td>${s.nome}</td><td colspan="4">non fattibile con questo serbatoio</td></tr>`;
+          const litri = (giriRimasti - s.g) * P.fuel_per_lap + cfg.margine;
+          return `<tr class="${s===mig?"pwbest":""}">
+            <td>${s.nome}${s===mig?" ★":""}</td>
+            <td class="pwnum">fra ${s.g} gir${s.g==1?"o":"i"}</td>
+            <td class="pwnum">${durataSosta(litri, s.gomme, cfg).toFixed(1)} s</td>
+            <td class="pwnum">${fmt(s.t)}</td>
+            <td class="pwnum">${s===mig?"—":"+"+(s.t-mig.t).toFixed(1)+" s"}</td></tr>`;
+        }).join("")}
+        </tbody></table>
+        ${mig ? `<div class="pwnote">Conviene <b>${mig.nome.toLowerCase()}</b>, fermandosi fra
+          <b>${mig.g} gir${mig.g==1?"o":"i"}</b> (giro ${(mia?mia.l:0)+mig.g}).</div>` : ""}
+        <div class="telhint">Il modello tiene conto del peso della benzina, del degrado gomme e del
+        malus da gomme fredde nei primi giri dopo la sosta. Vale in condizioni pulite:
+        neutralizzazioni e traffico possono ribaltare qualunque calcolo.</div>
+      </div>`;
+  }
+
+  body.innerHTML = stato + tabella + `
+    <div class="board" style="margin-top:12px">
+      <div class="ctx">Parametri della sosta</div>
+      <div class="pwgrid" style="padding-top:12px">
+        <label>Margine sicurezza (L)<input class="txtin" id="s_marg" value="${stratP.margine}"><span class="pwsrc">benzina che vuoi avere al traguardo</span></label>
+        <label>Rifornimento (s/L)<input class="txtin" id="s_flow" value="${stratP.flow}"></label>
+        <label>Cambio 2 gomme (s)<input class="txtin" id="s_g2" value="${stratP.gomme2}"></label>
+        <label>Cambio 4 gomme (s)<input class="txtin" id="s_g4" value="${stratP.gomme4}"></label>
+        <label>Malus gomme fredde (s)<input class="txtin" id="s_cold" value="${stratP.freddo}"><span class="pwsrc">perso sul giro di uscita</span></label>
+        <label>Serbatoio (L)<input class="txtin" id="s_tank" value="${stratP.serbatoio||100}"></label>
+      </div>
+      <label class="switchrow"><input type="checkbox" id="s_sim" ${stratP.simultaneo?"checked":""}><span>Benzina e gomme contemporaneamente</span></label>
+      <div class="telhint">Perdita in corsia box: <b>${cfg.perdita.toFixed(0)} s</b>${P.pit_loss!=null?` (dal tuo archivio: sosta completa ~${P.pit_loss} s)`:" (valore di partenza)"}</div>
+    </div>`;
+
+  const leg = (id, key) => { const el = document.getElementById(id); if (!el) return;
+    el.onchange = () => { const v = el.type === "checkbox" ? el.checked : parseFloat(el.value);
+      if (v != null && !Number.isNaN(v)) { stratP[key] = v; saveStrat(stratP); aggiornaLive(); } }; };
+  leg("s_marg","margine"); leg("s_flow","flow"); leg("s_g2","gomme2");
+  leg("s_g4","gomme4"); leg("s_cold","freddo"); leg("s_tank","serbatoio"); leg("s_sim","simultaneo");
+}
+
+/* ---- Scheda 4: Analisi giri e stint ---- */
+let stSel = [], stDa = null, stA = null, stPuliti = true;
+
+// Filtro giri sporchi: scarta out-lap, traffico ed errori confrontando con la mediana del pilota
+function filtraPuliti(giri, soglia){
+  const t = giri.map(g=>g.t).filter(x=>x>0).sort((a,b)=>a-b);
+  if (t.length < 3) return giri;
+  const med = t[Math.floor(t.length/2)];
+  return giri.filter(g => g.t <= med * soglia);
+}
+
+function renderStorico(body, d, ordinate, nomi, der){
+  const storico = d.storico || {};
+  const conDati = ordinate.filter(c => (storico[String(c.i)]||[]).length >= 2);
+  if (!conDati.length){
+    body.innerHTML = `<div class="board"><div class="ctx">Analisi giri</div>
+      <p class="warnbox">Servono almeno due giri completati per costruire il grafico del passo.
+      I dati si accumulano man mano che la sessione prosegue.</p></div>`;
+    return;
+  }
+  // di partenza seleziono me stesso
+  if (!stSel.length) stSel = [d.me != null && storico[String(d.me)] ? d.me : conDati[0].i];
+  stSel = stSel.filter(i => storico[String(i)]);
+
+  // intervallo di giri disponibile
+  const tuttiGiri = stSel.flatMap(i => (storico[String(i)]||[]).map(g=>g.l));
+  const minG = tuttiGiri.length ? Math.min(...tuttiGiri) : 1;
+  const maxG = tuttiGiri.length ? Math.max(...tuttiGiri) : 1;
+  if (stDa == null || stDa < minG) stDa = minG;
+  if (stA == null || stA > maxG) stA = maxG;
+
+  // stint del pilota di riferimento, per i pulsanti di isolamento automatico
+  const rifSoste = (d.soste || {})[String(stSel[0])] || [];
+  const stint = [];
+  let inizio = minG;
+  rifSoste.forEach(l => { if (l > inizio && l <= maxG){ stint.push([inizio, l]); inizio = l + 1; } });
+  if (inizio <= maxG) stint.push([inizio, maxG]);   // niente stint vuoto dopo l'ultima sosta
+
+  body.innerHTML = `
+    <div class="board" style="margin-bottom:12px">
+      <div class="ctx">Piloti da confrontare · massimo 5</div>
+      <div class="stpick">${ordinate.map(c => {
+        const p = nomi[c.i]||{}, n = (storico[String(c.i)]||[]).length;
+        if (!n) return "";
+        return `<label class="stchip ${stSel.includes(c.i)?"on":""}">
+          <input type="checkbox" data-st="${c.i}" ${stSel.includes(c.i)?"checked":""}>
+          <span class="clsdot" style="background:${colClasse(c.cl)}"></span>${esc(p.n||("Auto "+c.i))}
+          <i>${n} giri</i></label>`;
+      }).join("")}</div>
+    </div>
+
+    <div class="board" style="margin-bottom:12px">
+      <div class="ctx">Finestra di analisi</div>
+      <div class="strow">
+        <label>Dal giro <input class="txtin small" id="st_da" type="number" value="${stDa}" min="${minG}" max="${maxG}"></label>
+        <label>Al giro <input class="txtin small" id="st_a" type="number" value="${stA}" min="${minG}" max="${maxG}"></label>
+        <span class="presets">${stint.map((s,i)=>`<button class="btn small ghost" data-stint="${i}">Stint ${i+1}</button>`).join("")}
+          <button class="btn small ghost" data-stint="tutto">Tutto</button></span>
+        <label class="switchrow" style="padding:0"><input type="checkbox" id="st_pul" ${stPuliti?"checked":""}><span>Solo giri puliti</span></label>
+      </div>
+    </div>
+
+    <div class="board" style="margin-bottom:12px">
+      <div class="ctx">Passo sul giro</div>
+      <div class="chartbox" id="stchartbox"><canvas id="stchart"></canvas></div>
+      <div class="telhint" id="stinfo"></div>
+    </div>
+
+    <div class="board">
+      <div class="ctx">Tempi giro per giro</div>
+      <div class="sttab" id="sttab"></div>
+    </div>`;
+
+  body.querySelectorAll("[data-st]").forEach(k => k.onchange = () => {
+    const i = +k.dataset.st;
+    if (k.checked){ if (!stSel.includes(i)){ stSel.push(i); if (stSel.length>5) stSel.shift(); } }
+    else stSel = stSel.filter(x=>x!==i);
+    if (!stSel.length) stSel = [i];
+    aggiornaLive();
+  });
+  body.querySelectorAll("[data-stint]").forEach(b => b.onclick = () => {
+    if (b.dataset.stint === "tutto"){ stDa = minG; stA = maxG; }
+    else { const s = stint[+b.dataset.stint]; stDa = s[0]; stA = s[1]; }
+    aggiornaLive();
+  });
+  const da = document.getElementById("st_da"), a = document.getElementById("st_a");
+  da.onchange = () => { stDa = Math.max(minG, Math.min(maxG, +da.value||minG)); aggiornaLive(); };
+  a.onchange  = () => { stA  = Math.max(minG, Math.min(maxG, +a.value||maxG)); aggiornaLive(); };
+  document.getElementById("st_pul").onchange = e => { stPuliti = e.target.checked; aggiornaLive(); };
+
+  disegnaPasso(d, nomi, storico);
+}
+
+function disegnaPasso(d, nomi, storico){
+  const cv = document.getElementById("stchart"); if (!cv) return;
+  const dpr = Math.min(window.devicePixelRatio||1,2);
+  const H = Math.max(160, Math.round((cv.parentElement.clientHeight || 300) - 4));
+  cv.style.width="100%"; cv.style.height=H+"px";
+  cv.width = cv.clientWidth*dpr; cv.height = H*dpr;
+  const ctx = cv.getContext("2d"); ctx.scale(dpr,dpr);
+  const w = cv.clientWidth, padL=58, padR=14, padT=14, padB=30;
+  ctx.clearRect(0,0,w,H);
+
+  const COL = ["#e10600","#8ab4ff","#35d07f","#f2b63d","#c07bff"];
+  const serie = stSel.map((i,k) => {
+    let g = (storico[String(i)]||[]).filter(x => x.l >= stDa && x.l <= stA && x.t > 0);
+    if (stPuliti) g = filtraPuliti(g, 1.02);   // oltre il 2% sopra la mediana = giro sporco
+    return {i, col: COL[k%COL.length], nome: (nomi[i]||{}).n || ("Auto "+i), giri: g};
+  }).filter(s => s.giri.length);
+
+  const info = document.getElementById("stinfo");
+  if (!serie.length){
+    ctx.fillStyle="#8a8a92"; ctx.font="12px 'Titillium Web'"; ctx.textAlign="center";
+    ctx.fillText("Nessun giro in questa finestra.", w/2, H/2); ctx.textAlign="start";
+    if (info) info.textContent = "";
+    disegnaTabella(serie);
+    return;
+  }
+  const tutti = serie.flatMap(s=>s.giri);
+  const tMin = Math.min(...tutti.map(g=>g.t)), tMax = Math.max(...tutti.map(g=>g.t));
+  const marg = Math.max(0.2, (tMax-tMin)*0.12);
+  const yMin = tMin-marg, yMax = tMax+marg;
+  const X = l => padL + (l-stDa)/Math.max(1,(stA-stDa))*(w-padL-padR);
+  const Y = t => H-padB - (t-yMin)/((yMax-yMin)||1)*(H-padT-padB);
+
+  // griglia
+  ctx.strokeStyle="#26262a"; ctx.lineWidth=1; ctx.font="10px 'Chivo Mono',monospace"; ctx.fillStyle="#8a8a92";
+  const passoY = (yMax-yMin)/4;
+  for (let k=0;k<=4;k++){
+    const t = yMin + passoY*k;
+    ctx.beginPath(); ctx.moveTo(padL, Y(t)); ctx.lineTo(w-padR, Y(t)); ctx.stroke();
+    ctx.textAlign="right"; ctx.fillText(fmt(t), padL-6, Y(t)+3);
+  }
+  const nEtich = Math.min(8, Math.max(2, stA-stDa));
+  for (let k=0;k<=nEtich;k++){
+    const l = Math.round(stDa + (stA-stDa)*k/nEtich);
+    ctx.beginPath(); ctx.moveTo(X(l), padT); ctx.lineTo(X(l), H-padB); ctx.stroke();
+    ctx.textAlign="center"; ctx.fillText(String(l), X(l), H-padB+14);
+  }
+  ctx.fillText("giro", (padL+w-padR)/2, H-4); ctx.textAlign="start";
+
+  // linee
+  serie.forEach(s => {
+    ctx.strokeStyle=s.col; ctx.lineWidth=1.8; ctx.beginPath();
+    s.giri.forEach((g,i)=> i?ctx.lineTo(X(g.l),Y(g.t)):ctx.moveTo(X(g.l),Y(g.t)));
+    ctx.stroke();
+    ctx.fillStyle=s.col;
+    s.giri.forEach(g=>{ ctx.beginPath(); ctx.arc(X(g.l),Y(g.t),2.5,0,7); ctx.fill(); });
+  });
+  // legenda con media della finestra
+  if (info) info.innerHTML = serie.map(s => {
+    const med = s.giri.reduce((a,b)=>a+b.t,0)/s.giri.length;
+    const best = Math.min(...s.giri.map(g=>g.t));
+    return `<span class="stleg"><i style="background:${s.col}"></i>${esc(s.nome)} ·
+      ${s.giri.length} giri · media ${fmt(med)} · migliore ${fmt(best)}</span>`;
+  }).join("") + (stPuliti ? ` <span class="stnota">giri sporchi nascosti</span>` : "");
+  disegnaTabella(serie);
+  ridimensionabile(document.getElementById("stchartbox"), "passo_grafico",
+    () => disegnaPasso(d, nomi, storico));
+}
+
+function disegnaTabella(serie){
+  const host = document.getElementById("sttab"); if (!host) return;
+  if (!serie.length){ host.innerHTML = `<div class="empty" style="padding:14px">Nessun dato.</div>`; return; }
+  const giri = [...new Set(serie.flatMap(s=>s.giri.map(g=>g.l)))].sort((a,b)=>a-b);
+  // Le righe: un valore per pilota piu' il delta fra i primi due
+  const righe = giri.map(l => {
+    const t = serie.map(s => (s.giri.find(g=>g.l===l)||{}).t || null);
+    return {l, t, delta: (t[0]!=null && t[1]!=null) ? t[0]-t[1] : null,
+            migliore: Math.min(...t.filter(x=>x!=null))};
+  });
+  // Le colonne dei piloti sono dinamiche: cambiano con la selezione
+  const COL_GIRI = [{k:"giro", t:"Giro", ord:r=>r.l}]
+    .concat(serie.map((s,i)=>({k:"pil"+i, t:s.nome, ord:r=>r.t[i], col:s.col})))
+    .concat(serie.length>1 ? [{k:"delta", t:"Delta", ord:r=>r.delta}] : []);
+
+  const st = TAB.stato("giri", COL_GIRI);
+  const cols = TAB.attive(st, COL_GIRI);
+  const ordinate = TAB.ordina(righe, st, COL_GIRI);
+
+  const cella = (c, r) => {
+    if (c.k === "giro") return `<td class="pwnum">${r.l}</td>`;
+    if (c.k === "delta") return `<td class="pwnum ${r.delta!=null?(r.delta<0?"okv":"kov"):""}">${r.delta!=null?((r.delta>0?"+":"")+r.delta.toFixed(3)):"—"}</td>`;
+    const i = +c.k.slice(3), t = r.t[i];
+    return `<td class="pwnum ${t===r.migliore?"best":""}">${t!=null?fmt(t):"—"}</td>`;
+  };
+
+  host.innerHTML = `<div class="barrastrum">${TAB.menu(st, COL_GIRI, "giri")}</div>
+    <table class="pwtab tim"><thead><tr>${cols.map(c=>
+      c.col ? TAB.th(c,st).replace("<th ", `<th style="border-top:2px solid ${c.col}" `) : TAB.th(c,st)
+    ).join("")}</tr></thead><tbody>
+    ${ordinate.map(r => `<tr>${cols.map(c=>cella(c,r)).join("")}</tr>`).join("")}
+    </tbody></table>`;
+  TAB.attiva(host, "giri", COL_GIRI, st, () => aggiornaLive());
+  ridimensionabile(host, "tabella_giri");
+}
+
+/* ---- Scheda 3: Meteo e pista (solo dati reali) ---- */
+function renderMeteo(body, S){
+  const bagn = S.bagnato != null ? ["asciutto","quasi asciutto","umido","bagnato","molto bagnato","allagato"][Math.min(5,Math.max(0,(S.bagnato|0)-1))] : null;
+  body.innerHTML = `
+    <div class="board">
+      <div class="ctx">Condizioni attuali</div>
+      <div class="pwgrid" style="padding-top:12px">
+        <div class="mtbig"><span>Temperatura aria</span><b>${S.airTemp!=null?S.airTemp.toFixed(1)+" °C":"—"}</b></div>
+        <div class="mtbig"><span>Temperatura asfalto</span><b>${S.trackTemp!=null?S.trackTemp.toFixed(1)+" °C":"—"}</b></div>
+        <div class="mtbig"><span>Stato pista</span><b>${bagn?esc(bagn):"—"}</b></div>
+        <div class="mtbig"><span>Pioggia in corso</span><b>${S.pioggia!=null?Math.round(S.pioggia*100)+" %":"—"}</b></div>
+        <div class="mtbig"><span>Umidità</span><b>${S.umidita!=null?Math.round(S.umidita*100)+" %":"—"}</b></div>
+        <div class="mtbig"><span>Vento</span><b>${S.vento!=null?(S.vento*3.6).toFixed(0)+" km/h":"—"} ${S.ventoDir!=null?frecciaVento(S.ventoDir):""}</b></div>
+      </div>
+    </div>
+    <div class="board" style="margin-top:12px">
+      <div class="ctx">Previsioni</div>
+      <p class="warnbox">iRacing <b>non fornisce previsioni meteo</b> nella telemetria: fra le 354
+      variabili disponibili non c'è alcun dato sulla pioggia futura. Posso mostrarti solo le
+      condizioni attuali, che vedi qui sopra e nella torre di controllo.
+      Il punto di passaggio alle gomme da bagnato potrà essere calcolato inserendo a mano i tuoi
+      tempi sul bagnato, non dedotto da una previsione che non esiste.</p>
+    </div>`;
 }
 
 async function costruisciCalcolatore(){
@@ -1212,7 +2081,7 @@ async function costruisciCalcolatore(){
     const body = document.getElementById("pwbody");
     body.innerHTML = `<div class="empty">Analisi dei tuoi giri…</div>`;
     let p;
-    try { p = await api(`strategy/params?car_id=${selCar.value}&track_id=${selTrack.value}`); }
+    try { p = await api(`strategy/params?car_id=${selCar.value}&track_id=${selTrack.value}`); liveParams = p; }
     catch(e){ body.innerHTML = `<div class="err">Impossibile analizzare l'archivio.</div>`; return; }
     disegna(p, body);
   }
@@ -1627,51 +2496,6 @@ async function viewLapTelemetry(lapId){
   // Ricostruisce la forma del tracciato quando iRacing non fornisce le coordinate GPS.
   // In curva l'accelerazione laterale è legata al raggio: integrandola lungo il giro si
   // ottiene la traiettoria. La lunghezza della pista si stima da velocità media × tempo sul giro.
-  function ricostruisciTracciato(l){
-    // iRacing non fornisce le coordinate GPS (verificato: non esistono fra le 354 variabili).
-    // Fornisce però velocità e direzione, e da quelle la traiettoria si ricava per integrazione.
-    // Tre metodi in ordine di precisione: il primo usa la direzione MISURATA rispetto al nord,
-    // quindi non accumula errore di rotazione.
-    const ch = l.ch, n = (ch.lapdist || []).length;
-    if (!n || !l.time_s) return null;
-    const dt = l.time_s / n;
-    const X = [], Y = [];
-    let x = 0, y = 0;
-
-    if (ch.velx && ch.vely && ch.yaw && ch.yaw.some(v => v != null)){
-      // METODO MIGLIORE: velocità dell'auto ruotata secondo la direzione assoluta
-      for (let i=0;i<n;i++){
-        const vx = ch.velx[i], vy = ch.vely[i], a = ch.yaw[i];
-        if (vx != null && vy != null && a != null){
-          x += (vx * Math.cos(a) - vy * Math.sin(a)) * dt;
-          y += (vx * Math.sin(a) + vy * Math.cos(a)) * dt;
-        }
-        X.push(x); Y.push(y);
-      }
-    } else {
-      // RIPIEGO: direzione ricavata dalla rotazione o dall'accelerazione laterale
-      const sp = ch.speed, la = ch.lataccel, yr = ch.yawrate;
-      if (!sp) return null;
-      const usaYaw = yr && yr.some(v => v != null && Math.abs(v) > 1e-4);
-      if (!usaYaw && !la) return null;
-      let psi = 0;
-      for (let i=0;i<n;i++){
-        const v = sp[i];
-        if (v != null && v > 1){
-          psi += usaYaw && yr[i] != null ? yr[i] * dt : ((la[i] != null ? la[i] : 0) / v) * dt;
-          x += Math.cos(psi) * v * dt;
-          y += Math.sin(psi) * v * dt;
-        }
-        X.push(x); Y.push(y);
-      }
-    }
-    // il giro è chiuso: distribuisco lungo il percorso il piccolo errore di chiusura
-    const ex = X[n-1]-X[0], ey = Y[n-1]-Y[0];
-    for (let i=0;i<n;i++){ const f = i/(n-1); X[i] -= ex*f; Y[i] -= ey*f; }
-    if (Math.max(...X)-Math.min(...X) < 1e-6) return null;
-    return {lat: Y, lon: X, ricostruito: true};
-  }
-
   // Cerca in un asse qualsiasi (60 Hz o 360 Hz) il campione più vicino alla frazione di giro
   function idxInDist(arr, rel){
     if (!arr || !arr.length || rel < 0) return -1;
@@ -1697,7 +2521,11 @@ async function viewLapTelemetry(lapId){
   let zx0 = 0, zx1 = 1, selStart = null;
   const MINWIN = 0.02;   // tratto minimo visualizzabile (2% del giro)
   const H = 90;
-  const mapH = () => window.innerWidth >= 720 ? 340 : 240;
+  const mapH = () => {
+    const box = document.getElementById("telmapbox");
+    if (box && box.style.height) return Math.max(160, box.clientHeight - 16);
+    return window.innerWidth >= 720 ? 340 : 240;
+  };
 
   function buildMap(){
     // GPS se disponibile, altrimenti tracciato ricostruito dai dati di guida
@@ -2347,6 +3175,8 @@ async function viewLapTelemetry(lapId){
   });
 
   renderChips(); updateAddBtn(); buildMap(); buildGraphs();
+  ridimensionabile(document.getElementById("telmapbox"), "tel_mappa", () => { if (map){ map.ctx = setup(map.cv, mapH()); drawMap(curRel); } });
+  ridimensionabile(document.getElementById("telgraphs"), "tel_grafici");
 
   window.addEventListener("resize", () => {
     if (map) map.ctx = setup(map.cv, mapH());

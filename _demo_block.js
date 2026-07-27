@@ -247,11 +247,11 @@ const DEMO = (() => {
       return [{id:"me", name:"I miei giri", is_me:true, sessione:"Race"},
               {id:"p2", name:"Marco Rossi", is_me:false, sessione:"Practice"}];
     if (p.startsWith("track-outline")){
-      const tel = telById[101];
-      const pts = [];
-      for (let i=0;i<tel.lapdist.length;i+=4)
-        pts.push({d: tel.lapdist[i], lat: tel.lat[i], lon: tel.lon[i]});
-      return {disponibile:true, punti:pts};
+      const tel = (lapIndex[101]||{}).tel || {}; const c = {};
+      ["lapdist","velx","vely","yaw","yawrate","speed","lataccel"].forEach(k=>{
+        if (tel[k]) c[k] = tel[k].filter((_,i)=>i%4===0);
+      });
+      return {disponibile:true, canali:c, time_s:107.324};
     }
     if (p.startsWith("live")){
       const t = Date.now()/1000;
@@ -259,15 +259,30 @@ const DEMO = (() => {
       for (let i=0;i<12;i++){
         const vel = 1/108 * (1 + (i%5)*0.004);
         const d = ((t*vel) + i*0.083) % 1;
-        cars.push({i, p:i+1, l: 8 + (i%3), d:+d.toFixed(4),
+        cars.push({i, p:i+1, cp: (i%4)+1, cl: i%3, l: 22 + (i%3), d:+d.toFixed(4),
                    pit: (i===4 && Math.floor(t)%40 < 6) ? 1 : 0,
-                   lt: +(108 + (i%5)*0.4).toFixed(3), bt: +(107.2 + (i%5)*0.35).toFixed(3)});
-        piloti.push({i, n:`Pilota ${i+1}`, num:String(10+i), auto:"MX-5"});
-        if (i%3===0) soste[String(i)] = [4];
+                   lt: +(108 + (i%5)*0.4).toFixed(3), bt: +(107.2 + (i%5)*0.35).toFixed(3),
+                   gap: +(i*0.9).toFixed(2), ty: i%2});
+        piloti.push({i, n:`Pilota ${i+1}`, num:String(10+i), auto:["GTP","LMP2","GT3"][i%3]});
+        if (i%3===0) soste[String(i)] = [9, 18];
       }
       return {attivo:true, eta:0.4, soste, ts:t, me:0, cars, piloti,
+              storico: Object.fromEntries(cars.map(c=>{
+                 const gg=[]; let base=107.8+(c.i%5)*0.45;
+                 for(let L=1; L<=c.l; L++){
+                   const eta = L % 9;                       // stint da 9 giri
+                   const freddo = eta===0?1.1:eta===1?0.5:0;
+                   const sporco = (L===1 || L%9===0) ? 3.5 : (Math.random()<0.08 ? 2.2 : 0);
+                   gg.push({l:L, t:+(base + eta*0.05 + freddo + sporco + (Math.random()-0.5)*0.25).toFixed(3)});
+                 }
+                 return [String(c.i), gg];
+               })),
+              derivati: Object.fromEntries(cars.map(c=>[String(c.i),
+                 {stint: 4+(c.i%3), soste: c.i%3, passo: +(108.2+(c.i%5)*0.4).toFixed(3),
+                  pit_durata: c.i%3? 32.4 : null, in_pit_da: c.pit? 12.3 : null}])),
               sessione:{tipo:"Race", pista:"Autodromo Nazionale Monza", auto:"Mazda MX-5 Cup",
-                        tempoRimasto:1800, giriRimasti:16, airTemp:24.5, trackTemp:37.0},
+                        tempoRimasto:1800, giriRimasti:16, airTemp:24.5, trackTemp:37.0,
+                        pioggia:0, bagnato:1, umidita:0.42, vento:2.5, ventoDir:1.2},
               mia:{fuel:31.4, wear_lf:0.92, wear_rf:0.93, wear_lr:0.95, wear_rr:0.96,
                    temp_lf:83, temp_rf:85, temp_lr:80, temp_rr:82}};
     }

@@ -501,10 +501,23 @@ class IracingSource:
         if lap is None or dist is None:
             return None
         pos = arr("CarIdxPosition") or []
+        cpos = arr("CarIdxClassPosition") or []
+        cls = arr("CarIdxClass") or []
         pit = arr("CarIdxOnPitRoad") or []
         surf = arr("CarIdxTrackSurface") or []
         last = arr("CarIdxLastLapTime") or []
         best = arr("CarIdxBestLapTime") or []
+        f2 = arr("CarIdxF2Time") or []            # distacco gia' calcolato da iRacing
+        done = arr("CarIdxLapCompleted") or []
+        tyre = arr("CarIdxTireCompound") or []
+        def g(a, i, conv=int, minimo=None):
+            if i >= len(a) or a[i] is None:
+                return None
+            try:
+                v = conv(a[i])
+            except Exception:
+                return None
+            return None if (minimo is not None and v <= minimo) else v
         cars = []
         for i in range(len(dist)):
             if dist[i] is None or dist[i] < 0:
@@ -513,14 +526,17 @@ class IracingSource:
                 continue
             cars.append({
                 "i": i,
-                "p": int(pos[i]) if i < len(pos) and pos[i] else 0,
-                "l": int(lap[i]) if lap[i] is not None else 0,
+                "p": g(pos, i) or 0,
+                "cp": g(cpos, i),                     # posizione nella propria classe
+                "cl": g(cls, i),                      # classe (per il colore)
+                "l": g(done, i) if g(done, i) is not None else (g(lap, i) or 0),
                 "d": round(float(dist[i]), 4),
                 "pit": 1 if (i < len(pit) and pit[i]) else 0,
-                "lt": round(float(last[i]), 3) if i < len(last) and last[i] and last[i] > 0 else None,
-                "bt": round(float(best[i]), 3) if i < len(best) and best[i] and best[i] > 0 else None,
+                "lt": g(last, i, float, 0),
+                "bt": g(best, i, float, 0),
+                "gap": g(f2, i, float, -1),           # distacco dal precedente
+                "ty": g(tyre, i),                     # mescola
             })
-        ctx = self._read_context()
         me = self._safe_var("PlayerCarIdx")
         di = self._safe_var("DriverInfo") or {}
         piloti = [{"i": d.get("CarIdx"), "n": d.get("UserName"), "num": d.get("CarNumber"),
@@ -540,6 +556,13 @@ class IracingSource:
                 "bandiera": self._safe_var("SessionFlags"),
                 "airTemp": self._safe_var("AirTemp"),
                 "trackTemp": self._safe_var("TrackTempCrew"),
+                "pioggia": self._safe_var("Precipitation"),
+                "bagnato": self._safe_var("TrackWetness"),
+                "cielo": self._safe_var("Skies"),
+                "umidita": self._safe_var("RelativeHumidity"),
+                "vento": self._safe_var("WindVel"),
+                "ventoDir": self._safe_var("WindDir"),
+                "usura": self._safe_var("TrackUsage") if False else None,
             },
             "mia": {k: v for k, v in (self._last_strat or {}).items() if v is not None},
         }
